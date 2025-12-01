@@ -3,57 +3,53 @@ const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const User = require("../models/userSchema");
 const { v4: uuidv4 } = require("uuid");
 
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "https://www.thinkthankz.work.gd/auth/google/callback",
+passport.use(new GoogleStrategy(
+  {
+    clientID: "YOUR_GOOGLE_CLIENT_ID",   // <-- replace
+    clientSecret: "YOUR_GOOGLE_CLIENT_SECRET", // <-- replace
+    callbackURL: "https://e-commerce-website-dd3r.onrender.com/auth/google/callback",
     passReqToCallback: true,
-    scope: ['email', 'profile'] // Include 'profile' scope
-}, async (req, accessToken, refreshToken, profile, done) => {
+    scope: ["email", "profile"]
+  },
+  async (req, accessToken, refreshToken, profile, done) => {
     try {
-        console.log('Google authentication callback reached.');
-        // console.log('Profile:', profile);
-        const referralCode = uuidv4();
-        console.log(referralCode, "<<<<<<<<<<<<<referral is");
+      console.log("Google authentication callback reached.");
 
-        // Find or create user in the database
-        let user = await User.findOne({ googleId: profile.id });
+      const referralCode = uuidv4();
+      let user = await User.findOne({ googleId: profile.id });
 
-        if (!user) {    
-            
-            user = new User({
-                googleId: profile.id,
-                email: profile.emails[0].value,
-                name: profile.displayName,
-                referralCode: referralCode
-                // Add other fields as necessary
-            });
-            await user.save();
-        }
+      if (!user) {
+        user = new User({
+          googleId: profile.id,
+          email: profile.emails[0].value,
+          name: profile.displayName,
+          referralCode: referralCode,
+          profilePicture: profile.picture || null
+        });
+        await user.save();
+      }
 
-        req.session.user = user._id; // Set the session user ID
-        console.log(req.session.user, "<<<<<<<<<<<<<user is set in session");
-        return done(null, user);
+      req.session.user = user._id;
+      console.log(req.session.user, "<<<<<<<<<<<<< user saved in session");
+
+      return done(null, user);
     } catch (err) {
-        return done(err, null);
+      return done(err, null);
     }
-}));
+  }
+));
 
 passport.serializeUser((user, done) => {
-    done(null, user.id);
+  done(null, user.id);
 });
 
 passport.deserializeUser(async (id, done) => {
   try {
-      const user = await User.findById(id);
-      // console.log("Deserialized user:", user);
-  
-      done(null, user);
+    const user = await User.findById(id);
+    done(null, user);
   } catch (err) {
-      console.error("Error deserializing user:", err);
-      done(err, null);
+    done(err, null);
   }
 });
-
 
 module.exports = passport;
