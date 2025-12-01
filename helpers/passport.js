@@ -5,8 +5,8 @@ const { v4: uuidv4 } = require("uuid");
 
 passport.use(new GoogleStrategy(
   {
-    clientID: "YOUR_GOOGLE_CLIENT_ID",   // <-- replace
-    clientSecret: "YOUR_GOOGLE_CLIENT_SECRET", // <-- replace
+     clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: "https://e-commerce-website-dd3r.onrender.com/auth/google/callback",
     passReqToCallback: true,
     scope: ["email", "profile"]
