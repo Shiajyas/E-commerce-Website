@@ -92,4 +92,8 @@ Router.get("/wishlist", isLogged, wishlistController.getWishlistPage)
 Router.post("/addToWishlist",isLogged, wishlistController.addToWishlist)
 Router.get("/deleteWishlist", isLogged, wishlistController.deleteItemWishlist)
 
+//contact and about us
+Router.get("/contactUs", userController.getContactUsPage)
+Router.get("/aboutUs", userController.getAboutUsPage)
+
 module.exports = Router

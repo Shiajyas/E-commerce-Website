@@ -507,46 +507,56 @@ const filterByPrice = async (req, res) => {
 
 
 const searchProducts = async (req, res) => {
-    try {
-        const user = req.session.user;
-        let search = req.query.search || "";
-        const brands = await Brand.find({});
-        const categories = await Category.find({ isListed: true });
-        const selectedCategory = req.query.category || null; // Fetch selected category from query parameters
-        const selectedBrand = req.query.brand || null; // Fetch selected brand from query parameters
+  try {
+    const user = req.session.user;
+    let search = req.query.search || "";
+    const brands = await Brand.find({});
+    const categories = await Category.find({ isListed: true });
+    const selectedCategory = req.query.category || null;
+    const selectedBrand = req.query.brand || null;
 
-        const searchResultCount = await Product.find({
-            productName: { $regex: ".*" + search + ".*", $options: "i" },
-            isBlocked: false,
-        }).count();
+    const searchResultCount = await Product.find({
+      productName: { $regex: ".*" + search + ".*", $options: "i" },
+      isBlocked: false,
+    }).count();
 
-        const itemsPerPage = 6;
-        const currentPage = parseInt(req.query.page) || 1;
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
+    const itemsPerPage = 6;
+    const currentPage = parseInt(req.query.page) || 1;
+    const totalPages = Math.ceil(searchResultCount / itemsPerPage);
 
-        const searchResult = await Product.find({
-            productName: { $regex: ".*" + search + ".*", $options: "i" },
-            isBlocked: false,
-        }).skip(startIndex).limit(itemsPerPage).lean();
+    const searchResult = await Product.find({
+      productName: { $regex: ".*" + search + ".*", $options: "i" },
+      isBlocked: false,
+    })
+      .skip((currentPage - 1) * itemsPerPage)
+      .limit(itemsPerPage)
+      .lean();
 
-        const totalPages = Math.ceil(searchResultCount / itemsPerPage);
+    
+    const getPaginationLink = (page) => {
+      const urlParams = new URLSearchParams(req.query);
+      urlParams.set("page", page);
+      return `/shop?${urlParams.toString()}`;
+    };
 
-        res.render("shop", {
-            user: user,
-            product: searchResult,
-            category: categories,
-            brand: brands,
-            totalPages: totalPages,
-            currentPage: currentPage,
-            selectedCategory: selectedCategory, // Pass selectedCategory to the template
-            selectedBrand: selectedBrand // Pass selectedBrand to the template
-        });
-    } catch (error) {
-        console.log(error.message);
-        res.status(500).send("Internal Server Error");
-    }
-}
+    res.render("shop", {
+      user,
+      product: searchResult,
+      category: categories,
+      brand: brands,
+      totalPages,
+      currentPage,
+      selectedCategory,
+      selectedBrand,
+      searchKeyword: search,
+      getPaginationLink,
+    });
+
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
 
 const filterProduct = async (req, res) => {
     try {
@@ -706,11 +716,32 @@ const getSortProducts = async (req, res) => {
     }
 };
 
+const getContactUsPage = async (req, res) => {
+    try {
+        const user = req.session.user;
+        res.render("contact-us", { user });
+    } catch (error) {
+        console.log(error.message);
+    }
+};
+
+const getAboutUsPage = async (req, res) => {
+    try {
+        const user = req.session.user;
+        res.render("about-us", { user });
+    } catch (error) {
+        console.log(error.message);
+    }
+};
+
+
 
 
 
 
 module.exports = {
+    getContactUsPage,
+    getAboutUsPage, 
     getHomePage,
     getLoginPage,
     getSignupPage,
