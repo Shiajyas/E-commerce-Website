@@ -7,7 +7,7 @@ passport.use(new GoogleStrategy(
   {
      clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "https://e-commerce-website-dd3r.onrender.com/auth/google/callback",
+    callbackURL: "https://ecommerc.gdhu.online/auth/google/callback",
     passReqToCallback: true,
     scope: ["email", "profile"]
   },
