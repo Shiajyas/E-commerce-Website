@@ -139,10 +139,10 @@ ${products.map(p => `
 `;
 
             /* ---------- GENERATE PDF ---------- */
-           const browser = await puppeteer.launch({
+const browser = await puppeteer.launch({
   headless: "new",
-  args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+  executablePath: puppeteer.executablePath(),
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
 });
 
             const page = await browser.newPage();
