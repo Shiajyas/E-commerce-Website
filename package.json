@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon app.js",
-    "start": "node app.js",
-     "postinstall": "npx puppeteer browsers install chrome"
+    "start": "node app.js"
+   
   },
   "author": "shijay",
   "license": "ISC",

@@ -592,7 +592,8 @@ deliveredDate: order.deliveredAt
     </html>`;
 const browser = await puppeteer.launch({
   headless: "new",
-  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  args: ["--no-sandbox", "--disable-setuid-sandbox"],
+   executablePath: puppeteer.executablePath()
 });
 
     const page = await browser.newPage();
@@ -1085,7 +1086,7 @@ const generateLedgerPdf= async (req, res) => {
     /* ------------------------------------------------
        6️⃣ Puppeteer PDF
     -------------------------------------------------*/
-    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox","--disable-setuid-sandbox"] });
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox","--disable-setuid-sandbox"], executablePath: puppeteer.executablePath() });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
     await page.emulateMediaType("screen");
