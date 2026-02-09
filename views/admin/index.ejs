@@ -7,45 +7,119 @@
             <p>Whole data about your business here</p>
         </div>
     
-   <!-- Filter Form -->
-   <form id="filterForm" class="row" method="GET" action="/admin">
-    <!-- Year Selection -->
-    <div class=" col-6">
-        <label for="selectedYear">Select Year</label>
+<!-- Filter Form -->
+<form id="filterForm" class="row g-3" method="GET" action="/admin">
+
+    <!-- Year -->
+    <div class="col-md-3 col-6">
+        <label for="selectedYear">Year</label>
         <select id="selectedYear" name="year" class="form-control">
-            <% for(let i = 2000; i <= new Date().getFullYear(); i++) { %>
-                <option value="<%= i %>" <%= year === i ? 'selected' : '' %>><%= i %></option>
+            <% for (let i = 2000; i <= new Date().getFullYear(); i++) { %>
+                <option value="<%= i %>" <%= year === i ? 'selected' : '' %>>
+                    <%= i %>
+                </option>
             <% } %>
         </select>
-        
     </div>
 
-    <!-- Month Selection -->
-    <div class=" col-6">
-        <label for="selectedMonth">Select Month</label>
-        <select id="selectedMonth" name="month" class="form-control">
-          
-            <option value="1" <%= month === 1 ? 'selected' : '' %>>January</option>
-            <option value="2" <%= month === 2 ? 'selected' : '' %>>February</option>
-            <option value="3" <%= month === 3 ? 'selected' : '' %>>March</option>
-            <option value="4" <%= month === 4 ? 'selected' : '' %>>April</option>
-            <option value="5" <%= month === 5 ? 'selected' : '' %>>May</option>
-            <option value="6" <%= month === 6 ? 'selected' : '' %>>June</option>
-            <option value="7" <%= month === 7 ? 'selected' : '' %>>July</option>
-            <option value="8" <%= month === 8 ? 'selected' : '' %>>August</option>
-            <option value="9" <%= month === 9 ? 'selected' : '' %>>September</option>
-            <option value="10" <%= month === 10 ? 'selected' : '' %>>October</option>
-            <option value="11" <%= month === 11 ? 'selected' : '' %>>November</option>
-            <option value="12" <%= month === 12 ? 'selected' : '' %>>December</option>
-        </select>
-        
+    <!-- Month -->
+  <!-- Month -->
+<div class="col-md-3 col-6">
+    <label for="selectedMonth">Month</label>
+    <select id="selectedMonth" name="month" class="form-control">
+        <option value="">All Months</option>
+        <% 
+            const months = [
+                "January","February","March","April","May","June",
+                "July","August","September","October","November","December"
+            ];
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth() + 1;
+        %>
+
+        <% months.forEach((m, i) => { 
+            const monthNumber = i + 1;
+            const isFutureMonth = (year === currentYear && monthNumber > currentMonth);
+            if (!isFutureMonth) {
+        %>
+            <option value="<%= monthNumber %>" <%= month === monthNumber ? 'selected' : '' %>>
+                <%= m %>
+            </option>
+        <% } }) %>
+    </select>
+</div>
+
+    <!-- Start Date -->
+    <div class="col-md-3 col-6">
+        <label for="startDate">Start Date</label>
+        <input
+            type="date"
+            id="startDate"
+            name="startDate"
+            class="form-control"
+            max="<%= new Date().toISOString().split('T')[0] %>"
+            value="<%= locals.startDate || '' %>"
+        >
     </div>
 
-    <!-- Submit Button -->
+    <!-- End Date -->
+    <div class="col-md-3 col-6">
+        <label for="endDate">End Date</label>
+        <input
+            type="date"
+            id="endDate"
+            name="endDate"
+            class="form-control"
+            max="<%= new Date().toISOString().split('T')[0] %>"
+            value="<%= locals.endDate || '' %>"
+        >
+    </div>
+
+    <!-- Submit -->
     <div class="col-md-2 col-6 align-self-end">
-        <button id="filterButton" class="btn btn-primary" type="submit">Filter</button>
+        <button class="btn btn-primary w-100" type="submit">
+            Apply Filters
+        </button>
     </div>
+
 </form>
+
+<script>
+document.getElementById('filterForm').addEventListener('submit', function (e) {
+    const year = document.getElementById('selectedYear').value;
+    const month = document.getElementById('selectedMonth').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    // Case 1: Partial date range
+    if ((startDate && !endDate) || (!startDate && endDate)) {
+        e.preventDefault();
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Date Range',
+            text: 'Please select both Start Date and End Date.'
+        });
+        return;
+    }
+
+    // Case 2: Start date > end date
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+        e.preventDefault();
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Date Range',
+            text: 'Start Date cannot be greater than End Date.'
+        });
+        return;
+    }
+
+    // Case 3: If date range is used, ignore year/month
+    if (startDate && endDate) {
+        document.getElementById('selectedYear').disabled = true;
+        document.getElementById('selectedMonth').disabled = true;
+    }
+});
+</script>
 
 
     </div>
@@ -288,115 +362,163 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
 
 <script>
-    $(document).ready(function() {
-        $('#bestSellingProductsDropdown').select2();
-        $('#bestSellingCategoriesDropdown').select2();
-        $('#bestSellingBrandsDropdown').select2();
+document.getElementById('selectedYear').addEventListener('change', function () {
+    const selectedYear = parseInt(this.value);
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    const monthSelect = document.getElementById('selectedMonth');
+
+    // Reset months
+    monthSelect.innerHTML = '<option value="">All Months</option>';
+
+    const months = [
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December"
+    ];
+
+    months.forEach((month, index) => {
+        const monthValue = index + 1;
+
+        if (selectedYear < currentYear || monthValue <= currentMonth) {
+            const option = document.createElement('option');
+            option.value = monthValue;
+            option.textContent = month;
+            monthSelect.appendChild(option);
+        }
     });
+});
 </script>
 
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var productPerMonth = <%= JSON.stringify(productPerMonth) %>;
-        var monthlySalesArray = <%= JSON.stringify(monthlySalesArray) %>;
+document.addEventListener('DOMContentLoaded', function () {
 
-        var ctx = document.getElementById('myChart').getContext('2d');
+    /* ===============================
+       Select2 Initialization
+    ================================ */
+    if (window.$ && $.fn.select2) {
+        $('#bestSellingProductsDropdown').select2({ width: '100%' });
+        $('#bestSellingCategoriesDropdown').select2({ width: '100%' });
+        $('#bestSellingBrandsDropdown').select2({ width: '100%' });
+    }
 
-        var existingChart = Chart.getChart(ctx);
-        if (existingChart) {
-            existingChart.destroy();
+    /* ===============================
+       Data from Backend (Safe)
+    ================================ */
+    const productPerMonth = <%- JSON.stringify(productPerMonth || []) %>;
+    const monthlySalesArray = <%- JSON.stringify(monthlySalesArray || []) %>;
+
+    /* ===============================
+       LINE CHART (Monthly)
+    ================================ */
+    const lineCanvas = document.getElementById('myChart');
+    if (!lineCanvas) return;
+
+    const lineCtx = lineCanvas.getContext('2d');
+
+    // Destroy existing chart if present
+    const existingLineChart = Chart.getChart(lineCanvas);
+    if (existingLineChart) {
+        existingLineChart.destroy();
+    }
+
+    const lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+            datasets: [
+                {
+                    label: 'Products Added',
+                    data: productPerMonth,
+                    tension: 0.35,
+                    fill: true,
+                    backgroundColor: 'rgba(44,120,220,0.2)',
+                    borderColor: 'rgba(44,120,220,1)',
+                    pointRadius: 4
+                },
+                {
+                    label: 'Sales Count',
+                    data: monthlySalesArray,
+                    tension: 0.35,
+                    fill: true,
+                    backgroundColor: 'rgba(4,209,130,0.2)',
+                    borderColor: 'rgba(4,209,130,1)',
+                    pointRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        usePointStyle: true
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    /* ===============================
+       PIE CHART (Reusable)
+    ================================ */
+    let pieChartInstance = null;
+
+    window.createPieChart = function (labels = [], data = []) {
+        const pieCanvas = document.getElementById('pieChart');
+        if (!pieCanvas) return;
+
+        const pieCtx = pieCanvas.getContext('2d');
+
+        if (pieChartInstance) {
+            pieChartInstance.destroy();
         }
 
-        var lineChart = new Chart(ctx, {
-            type: 'line',
+        pieChartInstance = new Chart(pieCtx, {
+            type: 'pie',
             data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                labels,
                 datasets: [{
-                    label: 'Products',
-                    tension: 0.3,
-                    fill: true,
-                    backgroundColor: 'rgba(44, 120, 220, 0.2)',
-                    borderColor: 'rgba(44, 120, 220)',
-                    data: productPerMonth
-                }, {
-                    label: 'Sales',
-                    tension: 0.3,
-                    fill: true,
-                    backgroundColor: 'rgba(4, 209, 130, 0.2)',
-                    borderColor: 'rgb(4, 209, 130)',
-                    data: monthlySalesArray
+                    data,
+                    backgroundColor: [
+                        '#ff6384','#36a2eb','#ffce56','#4bc0c0',
+                        '#9966ff','#ff9f40','#ff6384','#36a2eb',
+                        '#ffce56','#4bc0c0'
+                    ]
                 }]
             },
             options: {
+                responsive: true,
                 plugins: {
                     legend: {
-                        labels: {
-                            usePointStyle: true
-                        }
+                        position: 'bottom'
                     }
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
                 }
             }
         });
+    };
 
-        // Create pie chart
-        function createPieChart(monthData) {
-            var pieData = monthData.map(dayData => dayData.sales); // Assuming monthData contains daily sales
+    /* ===============================
+       Example Pie Chart Call
+       (Call this dynamically on month select)
+    ================================ */
+    // createPieChart(
+    //   ['Day 1','Day 2','Day 3','Day 4'],
+    //   [1200, 900, 1500, 700]
+    // );
 
-            var pieCtx = document.getElementById('pieChart').getContext('2d');
-            var pieChart = new Chart(pieCtx, {
-                type: 'pie',
-                data: {
-                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10'], // Change labels accordingly
-                    datasets: [{
-                        label: 'Daily Sales',
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.2)',
-                            'rgba(54, 162, 235, 0.2)',
-                            'rgba(255, 206, 86, 0.2)',
-                            'rgba(75, 192, 192, 0.2)',
-                            'rgba(153, 102, 255, 0.2)',
-                            'rgba(255, 159, 64, 0.2)',
-                            'rgba(255, 99, 132, 0.2)',
-                            'rgba(54, 162, 235, 0.2)',
-                            'rgba(255, 206, 86, 0.2)',
-                            'rgba(75, 192, 192, 0.2)'
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)'
-                        ],
-                        data: pieData
-                    }]
-                },
-                options: {
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
-
-        // Example usage
-        // You need to call createPieChart with the data for the selected month
-        // createPieChart(selectedMonthData);
-    });
+});
 </script>
+
 
 <%- include("../partials/adminFooter") %>

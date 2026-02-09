@@ -1,209 +1,162 @@
 <!DOCTYPE html>
-<html class="no-js" lang="en">
-
-
-<!-- Mirrored from wp.alithemes.com/html/evara/evara-frontend/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 15 Jul 2023 10:04:24 GMT -->
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <title>Think Thankz</title>
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta property="og:title" content="">
-    <meta property="og:type" content="">
-    <meta property="og:url" content="">
-    <meta property="og:image" content="">
+
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="/user-assets/imgs/theme/favicon.svg">
+    <link rel="shortcut icon" href="/user-assets/imgs/theme/favicon.svg">
+
     <!-- Template CSS -->
     <link rel="stylesheet" href="/user-assets/css/maind134.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script> <!-- Add jQuery library -->
-    
+
+    <!-- Bootstrap 4 -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-   
-<!-- Bootstrap CSS -->
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Bootstrap JavaScript (jQuery and Popper.js are required dependencies) -->
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- JS (ORDER MATTERS) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-</head>
-
-<style>
-    /* Inline CSS for demonstration */
-    .header-middle {
-        padding: 10px 0;
-    }
-
-    .header-wrap {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .logo img {
-        max-width: 100%;
-        height: auto;
-    }
-
-    .main-menu {
-        display: flex;
-        align-items: center;
-    }
-
-    .main-menu nav ul {
-        display: flex;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .main-menu nav ul li {
-        margin-right: 20px;
-    }
-
-    .main-menu nav ul li a {
-        text-decoration: none;
-        color: #000;
-    }
-
-    .menu-toggle {
-        display: none;
-        background: none;
-        border: none;
-    }
-
-    @media (max-width: 992px) {
-        .main-menu {
-            display: none;
-            flex-direction: column;
+    <style>
+        /* ===== HEADER ===== */
+        .fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
+            z-index: 9999;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         }
 
-        .main-menu.active {
+        /* Spacer below fixed header */
+        .header-spacer {
+            height: 90px; /* MUST match header height */
+        }
+
+        /* Menu */
+        .header-wrap ul {
             display: flex;
+            margin: 0;
+            padding: 0;
         }
 
-        .menu-toggle {
-            display: block;
+        .header-wrap ul li {
+            list-style: none;
+            margin: 0 15px;
         }
 
-        .main-menu nav ul {
-            flex-direction: column;
-            width: 100%;
-            align-items: flex-start;
+        .header-wrap ul li a {
+            font-weight: 500;
+            color: #000;
+            text-decoration: none;
         }
 
-        .main-menu nav ul li {
-            width: 100%;
-            margin-right: 0;
-            margin-bottom: 10px;
+        /* Icons */
+        .header-action img {
+            width: 24px;
+            cursor: pointer;
         }
 
-        .main-menu nav ul li a {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
+        .header-action a {
+            margin-left: 15px;
         }
-    }
-</style>
+
+        /* Mobile */
+        @media (max-width: 991px) {
+            .main-menu {
+                display: none;
+            }
+            .header-spacer {
+                height: 70px;
+            }
+        }
+    </style>
+</head>
 
 <body>
 
-     
-    
-    <main class="main">
-      
-      
-            <div class="header-middle header-middle-ptb-1 d-none d-lg-block">
-                <div class="container">
-                    <div class="header-wrap">
-                        <div class="logo logo-width-1">
-                            <a href="/"><img src="/user-assets/imgs/theme/ThinkThankz-logo/cover.png"    alt="ThinkThankz" style="width: 300px; height: auto;"></a>
+<!-- ================= HEADER ================= -->
+<div class="header-middle header-middle-ptb-1 d-none d-lg-block fixed-header">
+    <div class="container">
+        <div class="header-wrap d-flex align-items-center justify-content-between">
+
+            <!-- LOGO -->
+            <div class="logo">
+                <a href="/">
+                    <img src="/user-assets/imgs/theme/ThinkThankz-logo/cover.png"
+                         alt="ThinkThankz"
+                         style="width:260px;">
+                </a>
+            </div>
+
+            <!-- NAVIGATION -->
+            <div class="main-menu">
+                <nav>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/aboutUs">About</a></li>
+                        <li><a href="/shop">Shop</a></li>
+                        <li><a href="/contactUs">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="header-action d-flex align-items-center">
+
+                    <!-- Wishlist -->
+
+                    <!-- Wishlist -->
+<a href="/wishlist" class="position-relative icon-wrapper mr-3">
+    <img src="/user-assets/imgs/theme/icons/icon-heart.svg" alt="Wishlist">
+    <% if (locals.wishlistCount > 0) { %>
+        <span id="wishlistBadge" class="badge badge-danger cart-badge"><%= locals.wishlistCount %></span>
+    <% } %>
+</a>
+
+<!-- Cart -->
+<a href="/cart" class="position-relative icon-wrapper mr-3">
+    <img src="/user-assets/imgs/theme/icons/icon-cart.svg" alt="Cart">
+    <% if (locals.cartCount > 0) { %>
+        <span id="cartBadge" class="badge badge-success cart-badge"><%= locals.cartCount %></span>
+    <% } %>
+</a>
+
+
+                <!-- User -->
+                <% if (locals.user) { %>
+                    <div class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <img src="/user-assets/imgs/theme/icons/user-profile.svg" alt="User">
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="/profile">Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-danger" href="/logout">Logout</a>
                         </div>
-                    
-                        <button class="menu-toggle d-lg-none" aria-label="Toggle navigation">
-                            <img src="/user-assets/imgs/theme/icons/menu.svg" alt="Menu">
-                        </button>
-                        
-                        <div class="main-menu main-menu-padding-1 main-menu-lh-2">
-                            <nav>
-                                <ul>
-                                    <li><a href="/">Home</a></li>
-                                    <li><a href="/aboutUs">About</a></li>
-                                    <li><a href="/shop">Shop</a></li>
-                                    <li><a href="/contactUs">Contact</a></li>
-                                </ul>
-                            </nav>
-                        </div>
-                            <div class="header-action-right" style="padding-left: 300px;">
-                                <div class="header-action-2">
-                                    <div class="header-action-icon-2">
-                                        <a href="/wishlist">
-                                            <img class="svgInject" alt="Evara" src="/user-assets/imgs/theme/icons/icon-heart.svg">
-                                            <!-- <span class="pro-count blue">4</span> -->
-                                        </a>
-                                    </div>
-                                    <div class="header-action-icon-2">
-                                        <a class="mini-cart-icon" href="/cart">
-                                            <img alt="Evara" src="/user-assets/imgs/theme/icons/icon-cart.svg">
-                                            <!-- <span class="pro-count blue">2</span> -->
-                                        </a>
-                                        <% if (locals.user) { %>
-                                            <!-- Displayed when the user is logged in -->
-                                            <li class="dropdown nav-item">
-                                              <a class="dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAccount" aria-expanded="false">
-                                                <!-- Uncomment the following line if you want to use an icon -->
-                                                <!-- <i class="fas fa-/user-circle"></i> -->
-                                                <img class="svgInject" alt="Evara" src="/user-assets/imgs/theme/icons/user-profile.svg" style="height: 25px; width: 25px; margin-top: 2px;">
-                                              </a>
-                                              <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
-                                                <a class="dropdown-item" href="/profile"><i class="material-icons md-perm_identity"></i> Profile</a>
-                                                <div class="dropdown-divider"></div>
-                                                <a class="dropdown-item text-danger" href="/logout"><i class="material-icons md-exit_to_app"></i> Logout</a>
-                                              </div>
-                                            </li>
-                                          <% } else { %>
-                                            <!-- Displayed when the user is not logged in -->
-                                            <div class="single-mobile-header-info ml-25 pr-5">
-                                              <a href="/login">Sign Up</a>
-                                            </div>
-                                          <% } %>
-                                          
-                                        
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
                     </div>
-                </div>
-            
-                <script>
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const menuToggle = document.querySelector('.menu-toggle');
-                        const mainMenu = document.querySelector('.main-menu');
-            
-                        menuToggle.addEventListener('click', function () {
-                            mainMenu.classList.toggle('active');
-                        });
-                    });
-                </script>
-                
+                <% } else { %>
+                    <a href="/login">Sign Up</a>
+                <% } %>
 
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- ===== SPACER (IMPORTANT) ===== -->
+<div class="header-spacer"></div>
 
+<!-- ================= PAGE CONTENT ================= -->
+<main class="main">
+    <!-- Your page content starts here -->
+</main>
 
-
-
-
-
-
-        
-     
-
+</body>
+</html>

@@ -80,7 +80,7 @@ Router.get("/invoice", orderController.getInvoice)
 Router.post("/applyCoupon", isLogged, userController.applyCoupon)
 Router.post("/logPaymentFailure", isLogged, orderController.logPaymentFailure)
 Router.post("/savePendingOrder", isLogged, orderController.savePendingOrder)
-// Router.post("/retryPayment", isLogged, orderController.retryPayment)
+Router.post("/saveRetryPayment", isLogged, orderController.retryFailedOrder)
 
 // Wallet
 Router.post("/addMoney", isLogged, walletController.addMoneyToWallet)

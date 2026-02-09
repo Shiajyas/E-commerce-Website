@@ -130,6 +130,23 @@ const addToCart = async (req, res) => {
     }
 }
 
+const deleteProduct = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log(id, "id");
+        const userId = req.session.user
+        const user = await User.findById(userId)
+        const cartIndex = user.cart.findIndex(item => item.productId == id)
+        user.cart.splice(cartIndex, 1)
+        await user.save()
+        console.log("item deleted from cart");
+        
+        res.redirect("/cart")
+    } catch (error) {
+        console.log('this is error ',error);
+    }
+}
+
 
 const changeQuantity = async (req, res) => {
     try {
@@ -203,21 +220,7 @@ const changeQuantity = async (req, res) => {
 }
 
 
-const deleteProduct = async (req, res) => {
-    try {
-        const id = req.query.id
-        console.log(id, "id");
-        const userId = req.session.user
-        const user = await User.findById(userId)
-        const cartIndex = user.cart.findIndex(item => item.productId == id)
-        user.cart.splice(cartIndex, 1)
-        await user.save()
-        console.log("item deleted from cart");
-        res.redirect("/cart")
-    } catch (error) {
-        console.log('thsi is aeroor ',error);
-    }
-}
+
 
 module.exports = {
     getCartPage,

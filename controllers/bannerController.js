@@ -1,11 +1,31 @@
 const Banner = require("../models/bannerSchema")
 
 const bannerManagement = async (req, res) => {
-    try {
-        const findBanner = await Banner.find({})
-        res.render("banner", { data: findBanner })
+  try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 5; // items per page
+        const search = req.query.search || '';
+
+        const query = search
+            ? { title: { $regex: search, $options: 'i' } }
+            : {};
+
+        const totalBanners = await Banner.countDocuments(query);
+
+        const banners = await Banner.find(query)
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .sort({ createdAt: -1 });
+
+        res.render('banner', {
+            data: banners,
+            currentPage: page,
+            totalPages: Math.ceil(totalBanners / limit),
+            search
+        });
     } catch (error) {
         console.log(error.message);
+        res.status(500).send("Server Error");
     }
 }
 

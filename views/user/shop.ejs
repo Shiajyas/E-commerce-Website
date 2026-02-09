@@ -2,99 +2,158 @@
 <html class="no-js" lang="en">
 
 
-<!-- Mirrored from wp.alithemes.com/html/evara/evara-frontend/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Sat, 15 Jul 2023 10:04:24 GMT -->
+
 <head>
     <meta charset="utf-8">
-    <title>Think Tahnkz</title>
+    <title>Think Thankz</title>
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta property="og:title" content="">
-    <meta property="og:type" content="">
-    <meta property="og:url" content="">
-    <meta property="og:image" content="">
+
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="/user-assets/imgs/theme/favicon.svg">
-    <!-- Template CSS -->
+    <link rel="shortcut icon" href="/user-assets/imgs/theme/favicon.svg">
+
+    <!-- Theme CSS -->
     <link rel="stylesheet" href="/user-assets/css/maind134.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" >
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script> <!-- Add jQuery library -->
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    
 
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- jQuery (ONLY ONCE) -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
+
+<style>
+.fixed-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999; /* make sure it's above everything else */
+    background-color: #fff; /* same as your header background */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* optional shadow */
+}
+body {
+    padding-top: 90px; /* height of header, adjust if header taller */
+}
+</style>
+
 
 <body>
 
-     
-    
+<!-- ================= HEADER ================= -->
+<div class="header-middle header-middle-ptb-1 d-none d-lg-block fixed-header">
+
+    <div class="container">
+        <div class="header-wrap d-flex align-items-center justify-content-between">
+
+            <!-- LOGO -->
+            <div class="logo">
+                <a href="/">
+                    <img src="/user-assets/imgs/theme/ThinkThankz-logo/cover.png"
+                         alt="ThinkThankz"
+                         style="width:260px;">
+                        
+                </a>
+            </div>
+
+            <!-- SEARCH -->
+
+
+<div class="search-style-2 position-relative">
+    <form id="headerSearchForm" onsubmit="event.preventDefault(); handleHeaderSearch();">
+        <input
+            type="text"
+            id="headerSearchInput"
+            name="search"
+            class="form-control"
+            placeholder="Search for items..."
+            style="padding-right:35px;" <!-- make space for the clear button -->
       
-            <div class="header-middle header-middle-ptb-1 d-none d-lg-block">
-                <div class="container">
-                    <div class="header-wrap">
-                        <div class="logo logo-width-1">
-                            <a href="/"><img src="/user-assets/imgs/theme/ThinkThankz-logo/cover.png" alt="logo"></a>
-                        </div>
-                        <div class="header-right ">
-                            <div class="search-style-2 pl-80">
-                                <form action="/search">
-                                    <input type="text" id="filterItem" name="search" class="form-control" placeholder="Search for items...">
-                                </form>
-                            </div>
-                            <div class="header-action-right">
-                                <div class="header-action-2">
-                                    <div class="header-action-icon-2">
-                                        <a href="/wishlist">
-                                            <img class="svgInject" alt="Evara" src="/user-assets/imgs/theme/icons/icon-heart.svg">
-                                            <!-- <span class="pro-count blue">4</span> -->
-                                        </a>
-                                    </div>
-                                    <div class="header-action-icon-2">
-                                        <a class="mini-cart-icon" href="/cart">
-                                            <img alt="Evara" src="/user-assets/imgs/theme/icons/icon-cart.svg">
-                                            <!-- <span class="pro-count blue">2</span> -->
-                                        </a>
-                                        <% if (locals.user) { %>
-                                            <!-- Displayed when the user is logged in -->
-                                            <li class="dropdown nav-item">
-                                              <a class="dropdown-toggle" data-bs-toggle="dropdown" href="#" id="dropdownAccount" aria-expanded="false">
-                                                <!-- Uncomment the following line if you want to use an icon -->
-                                                <!-- <i class="fas fa-/user-circle"></i> -->
-                                                <img class="svgInject" alt="Evara" src="/user-assets/imgs/theme/icons/user-profile.svg" style="height: 25px; width: 25px; margin-top: 2px;">
-                                              </a>
-                                              <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownAccount">
-                                                <a class="dropdown-item" href="/profile"><i class="material-icons md-perm_identity"></i> Profile</a>
-                                                <div class="dropdown-divider"></div>
-                                                <a class="dropdown-item text-danger" href="/logout"><i class="material-icons md-exit_to_app"></i> Logout</a>
-                                              </div>
-                                            </li>
-                                          <% } else { %>
-                                            <!-- Displayed when the user is not logged in -->
-                                            <div class="single-mobile-header-info ml-25 pr-5">
-                                              <a href="/login">Sign Up</a>
-                                            </div>
-                                          <% } %>
-                                          
-                                        
-                                    </div>
-                                </div>
-                            </div>
+        <span
+            id="clearSearchIcon"
+            onclick="clearHeaderSearch()"
+            style="
+                position:absolute;
+                right:10px;
+                top:50%;
+                transform:translateY(-50%);
+                cursor:pointer;
+                color:#900f0f;
+                font-size:24px; /* bigger */
+                font-weight:bold; /* more visible */
+                width:24px; height:24px; /* easier to click */
+                text-align:center;
+                line-height:24px;
+                display:none;
+            ">
+            &times;
+        </span>
+    </form>
+</div>
+
+
+
+
+            <!-- ACTIONS -->
+            <div class="header-action-right">
+                <div class="header-action-2 d-flex align-items-center">
+
+                    <!-- Wishlist -->
+                 <div class="header-action-icon-2 mr-3 icon-wrapper">
+    <a href="/wishlist">
+        <img src="/user-assets/imgs/theme/icons/icon-heart.svg" alt="Wishlist" style="width:24px;">
+        <% if (wishlistCount > 0) { %>
+            <span id="wishlistBadge" class="icon-count wishlist-count"><%= wishlistCount %></span>
+        <% } %>
+    </a>
+</div>
+
+
+                    <!-- Cart -->
+            <div class="header-action-icon-2 mr-3 icon-wrapper">
+    <a href="/cart">
+        <img src="/user-assets/imgs/theme/icons/icon-cart.svg" alt="Cart" style="width:24px;">
+        <% if (cartCount > 0) { %>
+            <span id="cartBadge" class="icon-count cart-count"><%= cartCount %></span>
+        <% } %>
+    </a>
+</div>
+
+
+                    <!-- User Dropdown -->
+                    <% if (locals.user) { %>
+                    <div class="dropdown header-action-icon-2">
+                        <a href="#"
+                           class="dropdown-toggle"
+                           data-toggle="dropdown"
+                           aria-haspopup="true"
+                           aria-expanded="false">
+                            <img src="/user-assets/imgs/theme/icons/user-profile.svg"
+                                 alt="User"
+                                 style="width:24px;">
+                        </a>
+
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="/profile">Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-danger" href="/logout">Logout</a>
                         </div>
                     </div>
+                    <% } else { %>
+                        <a href="/login" class="ml-2">Sign Up</a>
+                    <% } %>
+
                 </div>
             </div>
- 
-      
 
-
-
-
-
-
+        </div>
+    </div>
+</div>
 
 
 
@@ -144,184 +203,324 @@
 <section class="mt-50 mb-50">
     <div class="container">
         <div class="row flex-row-reverse">
+
+            <!-- PRODUCTS AREA -->
             <div class="col-lg-9">
-                <div class="shop-product-fillter">
+
+                <!-- TOP FILTER BAR -->
+                <div class="shop-product-fillter mb-20">
                     <div class="totall-product">
-                       <% if (locals.count) { %>
-                        <p> We found <strong class="text-brand"><%= locals.count %></strong> items for you!</p>
-                       <% } %>
+                        <% if (locals.count) { %>
+                            <p>We found <strong class="text-brand"><%= locals.count %></strong> items for you!</p>
+                        <% } %>
                     </div>
-                   
+
                     <div class="sort-by-product-area">
+
+                        <!-- SEARCH -->
+                    
+
+                        <!-- SORT -->
                         <select id="sortByDropdown" onchange="handleSortChange(this.value)">
-                            <option value="featured" selected>Featured</option>
+                            <option value="featured">Featured</option>
                             <option value="lowToHigh">Price: Low to High</option>
                             <option value="highToLow">Price: High to Low</option>
                             <option value="releaseDate">Release Date</option>
+                            <option value="clear">Clear</option>
                         </select>
-                        
+
+                        <!-- CATEGORY -->
                         <select id="categoryFilter" onchange="handleCategoryChange(this.value)">
                             <option value="">All Categories</option>
-                            <% category.forEach(category => { %>
-                                <option value="<%= category._id %>" <%= selectedCategory == category._id ? 'selected' : '' %>><%= category.name %></option>
-                            <% }); %>
+                            <% category.forEach(cat => { %>
+                                <option value="<%= cat._id %>" <%= selectedCategory == cat._id ? 'selected' : '' %>>
+                                    <%= cat.name %>
+                                </option>
+                            <% }) %>
                         </select>
-                        
+
+                        <!-- BRAND -->
                         <select id="brandFilter" onchange="handleBrandChange(this.value)">
                             <option value="">All Brands</option>
-                            <% brand.forEach(brand => { %>
-                                <option value="<%= brand._id %>" <%= selectedBrand == brand._id ? 'selected' : '' %>><%= brand.brandName %></option>
-                            <% }); %>
+                            <% brand.forEach(br => { %>
+                                <option value="<%= br._id %>" <%= selectedBrand == br._id ? 'selected' : '' %>>
+                                    <%= br.brandName %>
+                                </option>
+                            <% }) %>
                         </select>
+
                     </div>
-                    
-                    
                 </div>
-                <% if (product.length > 0) { %>
-                    <div class="row product-grid-3">
-                        <% for (let i = 0; i < product.length; i++) { %>
-                            <!-- Product Item -->
-                            <div class="col-lg-4 col-md-4 col-12 col-sm-6">
-                                <div class="product-cart-wrap mb-30">
-                                    <!-- Product Image and Actions -->
-                                    <div class="product-img-action-wrap">
-                                        <!-- Product Image -->
-                                        <div class="product-img product-img-zoom">
-                                            <a href="/productDetails?id=<%=product[i].id%>">
-                                                <img class="default-img" src="/uploads/product-images/<%=product[i].productImage[0]%>" alt="">
-                                            </a>
-                                        </div>
-                                        <!-- Product Actions -->
-                                        <div class="product-action-1">
-                                            <a aria-label="Add To Wishlist" class="action-btn hover-up" href="javascript:void(0);" onclick="addToWishlist('<%= product[i]._id %>')"><i class="fi-rs-heart"></i></a>
-                                        </div>
-                                        <!-- Product Badges -->
-                                        <div class="product-badges product-badges-position product-badges-mrg">
-                                            <span class="hot">Hot</span>
-                                        </div>
-                                    </div>
-                                    <!-- Product Content -->
-                                    <div class="product-content-wrap">
-                                        <!-- Product Category -->
-                                        <div class="product-category">
-                                            <a href="shop-grid-right.html"><%= product[i].brand %></a>
-                                        </div>
-                                        <!-- Product Name -->
-                                        <h2><a href="shop-product-right.html"><%= product[i].productName %></a></h2>
-                                        <!-- Product Price -->
-                                        <div class="product-price">
-                                            <span>₹<%= product[i].salePrice.toLocaleString('en-IN') %></span>
-                                            <span class="old-price">₹<%= product[i].regularPrice.toLocaleString('en-IN') %></span>
-                                        </div>
-                                        
-                                                     <div class="product-price">
-                                                          <% if (product[i].quantity == 0) { %>
-                                                        
-                                                            <span style="color: red; font-weight:300">Out of Stock</span>
-                                                              
-                                                            <% } else { %>
-                                                                <span class="price-label"><p>Stock left: <%= product[i].quantity %></p></span>
-                                                            <% } %>
-                                                     </div>
-                                                        
-                                        <!-- Add To Cart Button -->
-                                        <div class="product-action-1 show">
-                                            <a aria-label="Add To Cart" onclick="addToCart('<%=product[i]._id%>')" class="action-btn hover-up" ><i class="fi-rs-shopping-bag-add"></i></a>
-                                        </div>
-                                    </div>
-                                </div>
+
+                <!-- PRODUCTS GRID -->
+           <% if (product.length > 0) { %>
+    <div class="row product-grid-3 g-4">
+        <% for (let i = 0; i < product.length; i++) { %>
+            <div class="col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="product-cart-wrap mb-30">
+                    
+                    <!-- Product Image + Actions -->
+                    <div class="product-img-action-wrap">
+                        <div class="product-img product-img-zoom fixed-img-box">
+                            <a href="/productDetails?id=<%= product[i]._id %>">
+                                <img class="default-img" src="/uploads/product-images/<%= product[i].productImage[0] %>" alt="<%= product[i].productName %>">
+                            </a>
+                        </div>
+
+                        <!-- Wishlist -->
+                        <div class="product-action-1">
+                            <a aria-label="Add To Wishlist" class="action-btn hover-up" href="javascript:void(0);" onclick="addToWishlist('<%= product[i]._id %>')">
+                                <i class="fi-rs-heart"></i>
+                            </a>
+                        </div>
+
+                        <!-- Badges -->
+                        <div class="product-badges product-badges-position product-badges-mrg">
+                            <% if (product[i].quantity === 0) { %>
+                                <span class="out-stock">Out of Stock</span>
+                            <% } else { %>
+                               
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Product Content -->
+                    <div class="product-content-wrap">
+                        <div class="product-brand">
+                            <a href="/productDetails?id=<%= product[i]._id %>"><%= product[i].brand %></a>
+                        </div>
+
+                        <h2><a href="/productDetails?id=<%= product[i]._id %>"><%= product[i].productName %></a></h2>
+
+                        <div class="product-price">
+                            <span>₹<%= product[i].salePrice.toLocaleString('en-IN') %></span>
+                            <% if (product[i].regularPrice > product[i].salePrice) { %>
+                                <span class="old-price">₹<%= product[i].regularPrice.toLocaleString('en-IN') %></span>
+                            <% } %>
+                        </div>
+
+                        <!-- Stock Info -->
+                        <% if (product[i].quantity > 0) { %>
+                            <span class="stock-label">Stock left: <%= product[i].quantity %></span>
+                        <% } %>
+
+                        <!-- Add to Cart Button -->
+                        <% if (product[i].quantity > 0) { %>
+                            <div class="product-action-1 show mt-2">
+                                <a aria-label="Add To Cart" onclick="addToCart('<%= product[i]._id %>')" class="action-btn hover-up">
+                                    <i class="fi-rs-shopping-bag-add"></i> Add
+                                </a>
                             </div>
                         <% } %>
                     </div>
-                <% } else { %>
-                    <!-- No Products Message -->
-                    <div class="text-center mt-5">
-                        
-                        <!-- Add an attractive image or illustration here to make the message visually appealing -->
-                        <img src="https://cdn.dribbble.com/users/2382015/screenshots/6065978/media/1273880a5b9cc8008301089835f37939.gif" alt="No products available">
-                    </div>
-                <% } %>
-                
-                
 
-
-
-                <% if (totalPages) { %>
-                    <div class="pagination">
-                        <% if (currentPage > 1) { %>
-                            <button class="btn btn-sm">
-                                <a href="<%= getPaginationLink(currentPage - 1) %>">Previous</a>
-                            </button>
-                        <% } %>
-                
-                        <% for (let i = 1; i <= totalPages; i++) { %>
-                            <button class="btn btn-sm <%= i === currentPage ? 'active' : '' %>">
-                                <a href="<%= getPaginationLink(i) %>"><%= i %></a>
-                            </button>
-                        <% } %>
-                
-                        <% if (currentPage < totalPages) { %>
-                            <button class="btn btn-sm">
-                                <a href="<%= getPaginationLink(currentPage + 1) %>">Next</a>
-                            </button>
-                        <% } %>
-                    </div>
-                <% } %>
-                
-                
-                  
+                </div>
             </div>
-            <div class="col-lg-3 primary-sidebar sticky-sidebar">
-                <div class="widget-category mb-30">
-                    <h5 class="section-title style-1 mb-30 wow fadeIn animated">Category</h5>
-                    <ul class="categories">
-                        
-                        <% for (let i = 0; i < category.length; i++) { %>
-                            <li><a href="/filter?category=<%= category[i]._id %>"><%= category[i].name %></a></li>
-                        <% } %> 
+        <% } %>
+    </div>
+<% } else { %>
+    <div class="text-center mt-5">
+        <img src="https://cdn.dribbble.com/users/2382015/screenshots/6065978/media/1273880a5b9cc8008301089835f37939.gif" alt="No products available">
+    </div>
+<% } %>
 
 
-                    </ul>
-                </div>
+                <!-- PAGINATION -->
+            <% if (totalPages > 1) { %>
+<div class="pagination mt-30 d-flex justify-content-center gap-2">
 
-                <div class="widget-category mb-30">
-                    <h5 class="section-title style-1 mb-30 wow fadeIn animated">Brands</h5>
-                    <ul class="categories">
-                      
-                        <% for (let i = 0; i < brand.length; i++) { %>
-                            <li><a href="/filter?brand=<%= brand[i]._id %>"><%= brand[i].brandName %></a></li>
-                        <% } %>
-                        
-                    </ul>
-                </div>
-                <!-- Fillter By Price -->
-                <div class="sidebar-widget price_range range mb-30">
-                    <div class="widget-header position-relative mb-20 pb-10">
-                        <h5 class="widget-title mb-10">Fill by price</h5>
-                        <div class="bt-1 border-color-1"></div>
-                    </div>
-                    <div class="price-filter">
-                        <div class="price-filter-inner">
-                            <form id="price-filter-form">
-                                <div class="price-options">
-                                    <a href="/filter?gt=0&lt=1000"><button type="button" class="price-button" data-value="under-50000">Under $1,000</button></a>
-                                    <a href="/filter?gt=1000&lt=3000"><button type="button" class="price-button" data-value="50k-to-100k">$1,000 - $3,000</button></a>
-                                    <a href="/filter?gt=3000&lt=10000"><button type="button" class="price-button" data-value="100k-to-150k">$3,000 - $10,000</button></a>
-                                    <a href="/filter?gt=10000&lt=50000"><button type="button" class="price-button" data-value="above-150k">Above $10,000</button></a>
-                                    <input type="hidden" id="selected-price" name="selected-price" value="">
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                
-                
-            
+    <% if (currentPage > 1) { %>
+        <a class="page-btn" href="<%= getPaginationLink(currentPage - 1) %>">‹</a>
+    <% } %>
+
+    <% for (let i = 1; i <= totalPages; i++) { %>
+        <a href="<%= getPaginationLink(i) %>"
+           class="page-btn <%= i === currentPage ? 'active' : '' %>">
+            <%= i %>
+        </a>
+    <% } %>
+
+    <% if (currentPage < totalPages) { %>
+        <a class="page-btn" href="<%= getPaginationLink(currentPage + 1) %>">›</a>
+    <% } %>
+
+</div>
+<% } %>
+
+
+            </div>
+
+            <!-- SIDEBAR -->
+            <div class="col-lg-3 primary-sidebar">
+
+                <!-- PRICE FILTER -->
+<div class="sidebar-widget mb-30">
+    <h5>Filter by price</h5>
+
+    <a href="javascript:void(0)" class="price-button" data-gt="" data-lt="" onclick="handlePriceFilter(null,null)">All</a>
+    <a href="javascript:void(0)" class="price-button" data-gt="0" data-lt="1000" onclick="handlePriceFilter(0,1000)">Under ₹1,000</a>
+    <a href="javascript:void(0)" class="price-button" data-gt="1000" data-lt="3000" onclick="handlePriceFilter(1000,3000)">₹1,000 – ₹3,000</a>
+    <a href="javascript:void(0)" class="price-button" data-gt="3000" data-lt="10000" onclick="handlePriceFilter(3000,10000)">₹3,000 – ₹10,000</a>
+    <a href="javascript:void(0)" class="price-button" data-gt="10000" data-lt="50000" onclick="handlePriceFilter(10000,50000)">Above ₹10,000</a>
+</div>
+
+
+
+
             </div>
         </div>
     </div>
-    
 </section>
+
+<!-- FRONTEND LOGIC -->
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("headerSearchInput");
+    const clearIcon = document.getElementById("clearSearchIcon");
+
+    // Get search query from URL
+    const params = new URLSearchParams(window.location.search);
+    const searchQuery = params.get("search") || "";
+
+    // Set input value from URL
+    searchInput.value = searchQuery;
+
+    // Show clear icon if search exists
+    if (searchQuery) {
+        clearIcon.style.display = "inline";
+    }
+
+    // Show/hide clear icon while typing
+    searchInput.addEventListener("input", () => {
+        if (searchInput.value.trim()) {
+            clearIcon.style.display = "inline";
+        } else {
+            clearIcon.style.display = "none";
+        }
+    });
+});
+
+// Perform search
+function handleHeaderSearch() {
+    const searchInput = document.getElementById("headerSearchInput");
+    const query = searchInput.value.trim();
+    const params = new URLSearchParams(window.location.search);
+
+    if (query) {
+        params.set("search", query);
+    } else {
+        params.delete("search");
+    }
+
+    params.delete("page"); // reset pagination
+    window.location.href = `/shop?${params.toString()}`;
+}
+
+// Clear search explicitly
+function clearHeaderSearch() {
+    const searchInput = document.getElementById("headerSearchInput");
+    searchInput.value = "";
+
+    const params = new URLSearchParams(window.location.search);
+    params.delete("search");
+    params.delete("page"); // reset pagination
+
+    window.location.href = `/shop?${params.toString()}`;
+}
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("headerSearchInput");
+    const clearIcon = document.getElementById("clearSearchIcon");
+
+    // Show/hide clear icon
+    const toggleClearIcon = () => {
+        clearIcon.style.display = searchInput.value.trim() ? "inline" : "none";
+    };
+
+    searchInput.addEventListener("input", toggleClearIcon);
+    toggleClearIcon(); // run on page load if search exists
+
+    // Highlight selected price button
+    const params = new URLSearchParams(window.location.search);
+    const gt = params.get("gt");
+    const lt = params.get("lt");
+
+    document.querySelectorAll(".price-button").forEach(btn => {
+        btn.classList.remove("active");
+        const btnGt = btn.getAttribute("data-gt") || "";
+        const btnLt = btn.getAttribute("data-lt") || "";
+        if ((gt === btnGt && lt === btnLt) || (!gt && !lt && btnGt === "" && btnLt === "")) {
+            btn.classList.add("active");
+        }
+    });
+});
+
+// Handle search submission
+function handleHeaderSearch() {
+    const input = document.getElementById("headerSearchInput");
+    const query = input.value.trim();
+    const params = new URLSearchParams(window.location.search);
+
+    if (query) params.set("search", query);
+    else params.delete("search"); // only delete if input cleared
+
+    params.delete("page"); // reset pagination
+    window.location.href = `/shop?${params.toString()}`;
+}
+
+// Clear search explicitly
+function clearHeaderSearch() {
+    const input = document.getElementById("headerSearchInput");
+    input.value = "";
+    const params = new URLSearchParams(window.location.search);
+    params.delete("search"); // remove search param
+    params.delete("page");   // reset pagination
+    window.location.href = `/shop?${params.toString()}`;
+}
+
+// Sort, category, brand filters
+function updateQuery(paramsObj) {
+    const url = new URL(window.location.href);
+    Object.keys(paramsObj).forEach(k => {
+        if (!paramsObj[k]) url.searchParams.delete(k);
+        else url.searchParams.set(k, paramsObj[k]);
+    });
+    url.searchParams.delete("page");
+    window.location.href = url.toString();
+}
+
+function handleSortChange(v) {
+    updateQuery({ sort: v === "clear" ? null : v });
+}
+
+function handleCategoryChange(v) {
+    updateQuery({ category: v });
+}
+
+function handleBrandChange(v) {
+    updateQuery({ brand: v });
+}
+
+// Price filter — **does NOT remove search query**
+function handlePriceFilter(gt, lt) {
+    const params = new URLSearchParams(window.location.search);
+
+    if (gt === null || lt === null) {
+        params.delete("gt");
+        params.delete("lt");
+    } else {
+        params.set("gt", gt);
+        params.set("lt", lt);
+    }
+
+    params.delete("page"); // reset pagination
+    window.location.href = `/shop?${params.toString()}`;
+}
+</script>
+
 
 
 
@@ -360,7 +559,7 @@ function getPaginationLink(page) {
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
-                    })
+                    }).then(() => { location.reload(); });
                 } else if (res.status === "Out of stock") {
                     Swal.fire({
                         title: 'Stock!!',
@@ -390,37 +589,6 @@ function getPaginationLink(page) {
 
 
 <script>
-
-function addToWishlist(productId){
-    $.ajax({
-        url : "/addToWishlist",
-        method : "post",
-        data : {
-            productId : productId
-        },
-        success : (response)=>{
-            if(response.status == true){
-                Swal.fire({
-                                title: 'Added to Wishlist!',
-                                text: 'Continue Shopping',
-                                icon: 'success',
-                                timer: 2000,
-                                showConfirmButton: false
-                            })
-            }else if(response.status == false){
-                Swal.fire({
-                                title: 'You need to Login first',
-                                text: 'Continue Shopping',
-                                icon: 'warning',
-                                timer: 2000,
-                                showConfirmButton: false
-                            }).then(() => { window.location.href = '/login' });
-            }
-        }
-    })
-    return false;
-}
-
 
 function getCurrentPageFromURL(element) {
     
@@ -440,60 +608,101 @@ function getCurrentPageFromURL(element) {
 
 
 
-
 <section class="section-padding footer-mid">
-    <div class="container pt-15 pb-20">
+    <div class="container pt-30 pb-30">
         <div class="row">
-            <div class="col-lg-4 col-md-6">
-                <div class="widget-about font-md mb-md-5 mb-lg-0">
-                    <div class="logo logo-width-1 wow fadeIn animated">
-                        <a href="index.html"><img src="/user-assets/imgs/theme/Logo.png" alt="logo"></a>
+
+            <!-- BRAND + ABOUT -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="widget-about font-md">
+
+                    <div class="logo logo-width-1 wow fadeIn animated mb-20">
+                        <a href="/">
+                            <img 
+                                src="/user-assets/imgs/theme/ThinkThankz-logo/cover.png"
+                                alt="Think Thanks Logo"
+                                style="max-width: 220px;"
+                            >
+                        </a>
                     </div>
-                    <h5 class="mt-20 mb-10 fw-600 text-grey-4 wow fadeIn animated">Contact</h5>
-                    <p class="wow fadeIn animated">
-                        <strong>Address: </strong>562 Wellington Road, Street 32, San Francisco
+
+                    <p class="wow fadeIn animated mb-20">
+                        <strong>Think Thanks</strong> is your trusted destination for
+                        CCTV, security solutions, and smart surveillance products.
+                        Quality, reliability, and customer satisfaction come first.
                     </p>
+
+                    <a href="/aboutUs" class="btn btn-sm btn-outline-primary wow fadeIn animated">
+                        About Us →
+                    </a>
+
+                </div>
+            </div>
+
+            <!-- CONTACT -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="widget-contact font-md">
+
+                    <h4 class="fw-600 mb-20 wow fadeIn animated">Contact Us</h4>
+
                     <p class="wow fadeIn animated">
-                        <strong>Phone: </strong>+01 2222 365 /(+91) 01 2345 6789
+                        <i class="fi-rs-marker me-2"></i>
+                        Think Thanks, Coimbatore, Tamil Nadu, India
                     </p>
+
                     <p class="wow fadeIn animated">
-                        <strong>Hours: </strong>10:00 - 18:00, Mon - Sat
+                        <i class="fi-rs-phone-call me-2"></i>
+                        <a href="tel:+919876543210">+91 98765 43210</a>
                     </p>
-                    <h5 class="mb-10 mt-30 fw-600 text-grey-4 wow fadeIn animated">Follow Us</h5>
-                    <div class="mobile-social-icon wow fadeIn animated mb-sm-5 mb-md-0">
+
+                    <p class="wow fadeIn animated">
+                        <i class="fi-rs-envelope me-2"></i>
+                        <a href="mailto:support@thinkthanks.shop">
+                            support@thinkthanks.shop
+                        </a>
+                    </p>
+
+                    <p class="wow fadeIn animated">
+                        <i class="fi-rs-clock me-2"></i>
+                        10:00 – 18:00, Mon – Sat
+                    </p>
+
+                    <a href="/contactUs" class="btn btn-sm btn-dark mt-10 wow fadeIn animated">
+                        Contact Us →
+                    </a>
+
+                </div>
+            </div>
+
+            <!-- QUICK LINKS + IMAGE -->
+            <div class="col-lg-4 col-md-12">
+                <div class="footer-links wow fadeIn animated">
+
+                    <h4 class="fw-600 mb-20">Quick Links</h4>
+
+                    <ul class="list-unstyled mb-20">
+                        <li><a href="/aboutUs">About Us</a></li>
+                        <li><a href="/contactUs">Contact Us</a></li>
+                        <li><a href="/shop">Shop</a></li>
+                        <li><a href="/orders">My Orders</a></li>
+                    </ul>
+
+                    <!-- SOCIAL -->
+                    <h5 class="fw-600 mb-10">Follow Us</h5>
+                    <div class="mobile-social-icon">
                         <a href="#"><img src="/user-assets/imgs/theme/icons/icon-facebook.svg" alt=""></a>
                         <a href="#"><img src="/user-assets/imgs/theme/icons/icon-twitter.svg" alt=""></a>
                         <a href="#"><img src="/user-assets/imgs/theme/icons/icon-instagram.svg" alt=""></a>
-                        <a href="#"><img src="/user-assets/imgs/theme/icons/icon-pinterest.svg" alt=""></a>
                         <a href="#"><img src="/user-assets/imgs/theme/icons/icon-youtube.svg" alt=""></a>
                     </div>
+
                 </div>
             </div>
-            <div class="col-lg-2 col-md-3">
-                <h5 class="widget-title wow fadeIn animated">About</h5>
-                <ul class="footer-list wow fadeIn animated mb-sm-5 mb-md-0">
-                    <li><a href="#">About Us</a></li>
-                    <li><a href="#">Delivery Information</a></li>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms &amp; Conditions</a></li>
-                    <li><a href="#">Contact Us</a></li>
-                    <li><a href="#">Support Center</a></li>
-                </ul>
-            </div>
-            <div class="col-lg-6  col-md-3">
-                <h5 class="widget-title wow fadeIn animated">My Account</h5>
-                <ul class="footer-list wow fadeIn animated">
-                    <li><a href="#">Sign In</a></li>
-                    <li><a href="#">View Cart</a></li>
-                    <li><a href="#">My Wishlist</a></li>
-                    <li><a href="#">Track My Order</a></li>
-                    <li><a href="#">Help</a></li>
-                    <li><a href="#">Order</a></li>
-                </ul>
-            
+
         </div>
     </div>
 </section>
+
 <div class="container pb-20 wow fadeIn animated">
     <div class="row">
         <div class="col-12 mb-20">
@@ -511,94 +720,47 @@ function getCurrentPageFromURL(element) {
 </div>
 </footer>
 <!-- Preloader Start -->
-<div id="preloader-active">
-<div class="preloader d-flex align-items-center justify-content-center">
-    <div class="preloader-inner position-relative">
-        <div class="text-center">
-            <h5 class="mb-10">Now Loading</h5>
-            <div class="loader">
-                <div class="bar bar1"></div>
-                <div class="bar bar2"></div>
-                <div class="bar bar3"></div>
-            </div>
-        </div>
-    </div>
-</div>
+
 <script>
-
-
-    function handleSortChange(selectedOption) {
-        const category = document.getElementById('categoryFilter').value || null;
-        const brand = document.getElementById('brandFilter').value || null;
-        const urlParams = new URLSearchParams(window.location.search);
-
-        if (category) {
-            urlParams.set('category', category);
-        } else {
-            urlParams.delete('category');
-        }
-
-        if (brand) {
-            urlParams.set('brand', brand);
-        } else {
-            urlParams.delete('brand');
-        }
-
-        urlParams.set('sort', selectedOption);
-
-        const newUrl = `${window.location.origin}/filter?${urlParams.toString()}`;
-        window.location.href = newUrl;
-    }
-
-    function handleCategoryChange(selectedCategory) {
-        const sort = document.getElementById('sortByDropdown').value;
-        const brand = document.getElementById('brandFilter').value || null;
-        const urlParams = new URLSearchParams(window.location.search);
-
-        if (selectedCategory) {
-            urlParams.set('category', selectedCategory);
-        } else {
-            urlParams.delete('category');
-        }
-
-        if (brand) {
-            urlParams.set('brand', brand);
-        } else {
-            urlParams.delete('brand');
-        }
-
-        urlParams.set('sort', sort);
-
-        const newUrl = `${window.location.origin}/filter?${urlParams.toString()}`;
-        window.location.href = newUrl;
-    }
-
-    function handleBrandChange(selectedBrand) {
-        const sort = document.getElementById('sortByDropdown').value;
-        const category = document.getElementById('categoryFilter').value || null;
-        const urlParams = new URLSearchParams(window.location.search);
-
-        if (selectedBrand) {
-            urlParams.set('brand', selectedBrand);
-        } else {
-            urlParams.delete('brand');
-        }
-
-        if (category) {
-            urlParams.set('category', category);
-        } else {
-            urlParams.delete('category');
-        }
-
-        urlParams.set('sort', sort);
-
-        const newUrl = `${window.location.origin}/filter?${urlParams.toString()}`;
-        window.location.href = newUrl;
-    }
 </script>
 
 
-<script>
+
+<!-- <script>
+
+
+function addToWishlist(productId){
+    $.ajax({
+        url : "/addToWishlist",
+        method : "post",
+        data : {
+            productId : productId
+        },
+        success : (response)=>{
+            if(response.status == true){
+                Swal.fire({
+                                title: 'Added to Wishlist!',
+                                text: 'Continue Shopping',
+                                icon: 'success',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => { location.reload(); });
+            }else if(response.status == false){
+                Swal.fire({
+                                title: 'You need to Login first',
+                                text: 'Continue Shopping',
+                                icon: 'warning',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => { window.location.href = '/login' });
+            }
+        }
+    })
+    return false;
+}
+
+
+
     function addToCart(prodId) {
 
         var quantity = 1;
@@ -617,7 +779,7 @@ function getCurrentPageFromURL(element) {
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
-                    })
+                    }).then(() => { location.reload(); });
                 } else if (res.status === "Out of stock") {
                     Swal.fire({
                         title: 'Stock!!',
@@ -642,7 +804,91 @@ function getCurrentPageFromURL(element) {
         });
     }
 
+</script> -->
+
+
+<script>
+function updateHeaderBadges(cartCount = null, wishlistCount = null) {
+    const cartBadge = document.getElementById("cartBadge");
+    const wishlistBadge = document.getElementById("wishlistBadge");
+
+    if (cartBadge && cartCount !== null) cartBadge.textContent = cartCount;
+    if (wishlistBadge && wishlistCount !== null) wishlistBadge.textContent = wishlistCount;
+}
+
+// Fetch updated counts from server
+async function fetchCartWishlistCounts() {
+    try {
+        const res = await fetch("/api/cart-wishlist-count");
+        const data = await res.json();
+        updateHeaderBadges(data.cartCount, data.wishlistCount);
+    } catch (err) {
+        console.error("Failed to fetch cart/wishlist counts", err);
+    }
+}
+
+// Add to Cart
+function addToCart(prodId) {
+    $.ajax({
+        url: `/addToCart?id=${prodId}`,
+        method: "post",
+        data: { quantity: 1 },
+        success: (res) => {
+            if(res.status === true){
+                Swal.fire({
+                    title: 'Added to Cart!',
+                    text: 'Continue Shopping',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                fetchCartWishlistCounts(); // ✅ update badge without reload
+            } else if(res.status === "Out of stock") {
+                Swal.fire({ title: 'Out of Stock!', icon: 'error', timer: 1500 });
+            } else {
+                Swal.fire({ title: 'Login Required', icon: 'warning', timer: 1500 })
+                    .then(() => window.location.href='/login');
+            }
+        }
+    });
+}
+
+// Add to Wishlist
+function addToWishlist(productId){
+    $.ajax({
+        url : "/addToWishlist",
+        method : "post",
+        data : { productId },
+        success : (res)=>{
+            if(res.status === true){
+                Swal.fire({
+                    title: 'Added to Wishlist!',
+                    text: 'Continue Shopping',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                fetchCartWishlistCounts(); // ✅ update badge without reload
+            } else {
+                Swal.fire({
+                    title: 'Login Required',
+                    text: 'Continue Shopping',
+                    icon: 'warning',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => window.location.href='/login');
+            }
+        }
+    })
+}
 </script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+
+
 
 <!-- Vendor JS-->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>

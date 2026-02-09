@@ -2,18 +2,13 @@
 
 
 
-
-
-
-
-
     <main class="container">
        
         <section class="content-main">
             <div class="content-header">
                 <div class="mt-20">
                     <h2 class="content-title card-title">Order detail</h2>
-                    <p>Details for Order ID: <%=orders._id%></p>
+                  
                 </div>
             </div>
             <div class="card mt-60">
@@ -29,8 +24,7 @@
                                     <% const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' }; %>
                                     <%= new Date(orders.createdOn).toLocaleDateString('en-US', dateOptions) %>
                                 </b>
-                            </span> <br>
-                            <small class="text-muted">Order ID: <%=orders._id%></small>
+                            </span>
                         </div>
                         <input type="hidden" id="orderId" value="<%= orders._id %>">
                         <div class="col-lg-4 col-md-4 ms-auto text-md-end">
@@ -40,7 +34,7 @@
 
                                     <div class="row">
                                    <div class="col-2 ">  
-                                    <!-- <a href="/invoice?id=<%= orders._id %>"><button  class="btn btn-primary">Invoice</button></a> -->
+                                    <a href="/invoice?id=<%= orders._id %>"><button  class="btn btn-primary">Invoice</button></a>
                                         </div>
                                         <div class="col-5" style="margin-top: 10px; margin-left: 50px;">
 
@@ -111,6 +105,7 @@
                                                     <%}%>
 
                                     </p>
+                                    <p>Date: <%= new Date(orders.createdOn).toLocaleDateString('en-US', dateOptions) %></p>
                                     
                                 </div>
                             </article>
@@ -377,8 +372,6 @@
     }
   </style>
 
-  
- 
   <script>
 function handleDropdownChange(selectElement) {
     var orderIdElement = document.getElementById('orderId');
@@ -387,17 +380,36 @@ function handleDropdownChange(selectElement) {
         return;
     }
     var orderId = orderIdElement.value;
-    console.log(orderId, "hiiiiiiiiiiiiiiiiiiiii");
-
     var selectedValue = selectElement.value;
-    console.log(selectedValue);
-    if (selectedValue === "cancel" || selectedValue === "Shipped" || selectedValue === "Delivered") {
-        window.location.href = `/admin/changeStatus?orderId=${orderId}&status=${selectedValue}`;
+
+    if (selectedValue === "Shipped" || selectedValue === "Delivered" || selectedValue === "cancel") {
+        // Show confirmation modal
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `You are about to change the status to "${selectedValue}"`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, change it!',
+            cancelButtonText: 'No, cancel',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Redirect to change status route
+                window.location.href = `/admin/changeStatus?orderId=${orderId}&status=${selectedValue}`;
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                // Reset the dropdown to default option if canceled
+                selectElement.value = "status";
+            }
+        });
     } else {
-        alert("error");
+        alert("Invalid action");
+        selectElement.value = "status";
     }
 }
+</script>
 
+ 
+  <script>
 
     function performAction() {
         // This function can be used for additional actions when the "Save" button is clicked

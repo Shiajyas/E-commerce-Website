@@ -120,6 +120,7 @@ const postAddress = async (req, res) => {
                 landMark,
                 state,
                 pincode,
+                email,
                 phone,
                 altPhone,
             });

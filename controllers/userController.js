@@ -47,6 +47,9 @@ const getHomePage = async (req, res) => {
             startDate: { $lt: new Date(today) },
             endDate: { $gt: new Date(today) }
         });
+        
+        
+        
       
         const userData = await User.findOne({});
         const brandData = await Brand.find({ isBlocked: false });
@@ -108,8 +111,9 @@ function generateOtp() {
 //User Registration
 const signupUser = async (req, res) => {
     try {
-        const { email, phone, name, referralCode, password, cPassword } = req.body;
-        req.session.referralCode = referralCode;
+        const { email, phone, name, referalCode, password, cPassword } = req.body;
+        console.log("Referral Code from form:", referalCode);
+        req.session.referalCode = referalCode;
         req.session.phone = phone;
 
         // Validate input
@@ -136,6 +140,14 @@ const signupUser = async (req, res) => {
             return res.render("signup", { message: "User with this email already exists." });
         }
 
+        // check phone number already exists
+        const existingPhone = await User.findOne({ phone });
+        if (existingPhone) {
+            console.log("Phone number already exists");
+            return res.render("signup", { message: "User with this phone number already exists." });
+        }
+
+       
         // Initialize Twilio client
         // const twilioClient = new twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -277,25 +289,32 @@ const verifyOtp = async (req, res) => {
         if (otp === req.session.userOtp) {
             const user = req.session.userData;
             const passwordHash = await securePassword(user.password);
-            const referralCode = uuidv4();
-            console.log("the referralCode  =>" + referralCode);
+            const referalCode = uuidv4();
+            // console.log("the referalCode  =>" + referalCode);
+            // console.log("referal in session =>" + req.session.referalCode);
+            // console.log("referal in session 2=>" + req.session.userData.referalCode);
 
             const saveUserData = new User({
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
                 password: passwordHash,
-                referalCode: referralCode
+                referalCode: referalCode
             });
 
             await saveUserData.save();
 
             req.session.user = saveUserData._id;
+            
 
             if (req.session.referalCode) {
-                const referalCode1 = req.session.referalCode;
+                // const referalCode1 = req.session.referalCode;
                 const currentUser = await User.findOne({ _id: req.session.user });
-                const codeOwner = await User.findOne({ referalCode: referalCode1 });
+                 console.log("referal in session =>" + req.session.referalCode);
+                const codeOwner = await User.findOne({ referalCode: req.session.referalCode });
+
+                console.log("Current User ID:", currentUser._id);
+                console.log("Code Owner ID:", codeOwner );
 
                 await User.updateOne(
                     { _id: req.session.user },
@@ -322,8 +341,7 @@ const verifyOtp = async (req, res) => {
                                 status: "credit",
                                 date: Date.now(),
                                 redeemedUsers: currentUser._id
-                            },
-                            $set: { referalCode: "" }
+                            }
                         }
                     }
                 );
@@ -401,109 +419,149 @@ const getLogoutUser = async (req, res) => {
 
 const getProductDetailsPage = async (req, res) => {
     try {
-        const user = req.session.user
-        console.log("wrking");
-        const id = req.query.id
-        console.log(id);
-        const findProduct = await Product.findOne({ id: id });
-        const findCategory = await Category.findOne({name : findProduct.category})
-        // console.log(findCategory);
-        let totalOffer
-        if(findCategory.categoryOffer || findProduct.productOffer){
-            totalOffer = findCategory.categoryOffer + findProduct.productOffer
+        const user = req.session.user;
+        const { id } = req.query;
+
+        // ✅ Correct product fetch
+        const findProduct = await Product
+            .findById(id)
+            .populate('category');
+
+        // 🛑 Product not found
+        if (!findProduct) {
+            return res.status(404).render('404', {
+                message: 'Product not found'
+            });
         }
-        console.log(findProduct.id, "Hello world");
-        if (user) {
-            res.render("product-details", { data: findProduct, totalOffer, user: user })
-        } else {
-            res.render("product-details", { data: findProduct, totalOffer })
-        }
+
+        const findCategory = findProduct.category;
+
+        // ✅ Safe offer calculation
+        const categoryOffer = findCategory?.categoryOffer || 0;
+        const productOffer = findProduct.productOffer || 0;
+        const totalOffer = categoryOffer + productOffer;
+
+        res.render("product-details", {
+            data: findProduct,
+            totalOffer,
+            user
+        });
+
     } catch (error) {
-        console.log(error.message);
+        console.error(error);
+        res.status(500).send("Server Error");
     }
-}
+};
+
 
 const getShopPage = async (req, res) => {
     try {
-        const user = req.session.id;
-        const products = await Product.find({ isBlocked: false });
-        const count = await Product.find({ isBlocked: false }).count();
-        const brands = await Brand.find({});
-        const categories = await Category.find({ isListed: true });
-
-        let itemsPerPage = 6;
-        let currentPage = parseInt(req.query.page) || 1;
-        let startIndex = (currentPage - 1) * itemsPerPage;
-        let endIndex = startIndex + itemsPerPage;
-        let totalPages = Math.ceil(products.length / itemsPerPage);
-        const currentProduct = products.slice(startIndex, endIndex);
-
-        // Function to generate pagination links with query parameters
-        const getPaginationLink = (page) => {
-            const urlParams = new URLSearchParams(req.query);
-            urlParams.set('page', page);
-            return `/shop?${urlParams.toString()}`;
-        };
-
-        res.render("shop", {
-            user: user,
-            product: currentProduct,
-            category: categories,
-            brand: brands,
-            count: count,
-            totalPages: totalPages,
-            currentPage: currentPage,
-            getPaginationLink: getPaginationLink,
-            selectedCategory: req.query.category || null,
-            selectedBrand: req.query.brand || null
-        });
-    } catch (error) {
-        console.log(error.message);
-    }
-};
-
-const filterByPrice = async (req, res) => {
-    try {
         const user = req.session.user;
+
+        const {
+            search = "",
+            category,
+            brand,
+            sort,
+            gt,
+            lt,
+            page = 1
+        } = req.query;
+
         const brands = await Brand.find({});
         const categories = await Category.find({ isListed: true });
-        const findProducts = await Product.find({
-            $and: [
-                { salePrice: { $gt: req.query.gt } },
-                { salePrice: { $lt: req.query.lt } },
-                { isBlocked: false }
-            ]
-        });
 
-        let itemsPerPage = 6;
-        let currentPage = parseInt(req.query.page) || 1;
-        let startIndex = (currentPage - 1) * itemsPerPage;
-        let endIndex = startIndex + itemsPerPage;
-        let totalPages = Math.ceil(findProducts.length / itemsPerPage);
-        const currentProduct = findProducts.slice(startIndex, endIndex);
+        // -----------------------------
+        // BUILD QUERY
+        // -----------------------------
+        const query = { isBlocked: false };
 
-        // Function to generate pagination links with query parameters
+        // Search
+        if (search) {
+            query.productName = { $regex: search, $options: "i" };
+        }
+
+        // Category
+        if (category) {
+            const findCategory = await Category.findById(category);
+            if (findCategory) {
+                query.category = findCategory.name;
+            }
+        }
+
+        // Brand
+        if (brand) {
+            const findBrand = await Brand.findById(brand);
+            if (findBrand) {
+                query.brand = findBrand.brandName;
+            }
+        }
+
+        // Price
+        if (gt && lt) {
+            query.salePrice = {
+                $gt: Number(gt),
+                $lt: Number(lt)
+            };
+        }
+
+        // -----------------------------
+        // SORT
+        // -----------------------------
+        let sortCriteria = {};
+        if (sort === "lowToHigh") sortCriteria.salePrice = 1;
+        else if (sort === "highToLow") sortCriteria.salePrice = -1;
+        else if (sort === "releaseDate") sortCriteria.createdOn = -1;
+
+        // -----------------------------
+        // PAGINATION (DB LEVEL)
+        // -----------------------------
+        const itemsPerPage = 6;
+        const currentPage = parseInt(page);
+        const skip = (currentPage - 1) * itemsPerPage;
+
+        const totalProducts = await Product.countDocuments(query);
+
+        const products = await Product.find(query)
+            .sort(sortCriteria)
+            .skip(skip)
+            .limit(itemsPerPage)
+            .lean();
+
+        const totalPages = Math.ceil(totalProducts / itemsPerPage);
+
+        // -----------------------------
+        // PAGINATION LINKS
+        // -----------------------------
         const getPaginationLink = (page) => {
-            const urlParams = new URLSearchParams(req.query);
-            urlParams.set('page', page);
-            return `/shop?${urlParams.toString()}`;
+            const params = new URLSearchParams(req.query);
+            params.set("page", page);
+            return `/shop?${params.toString()}`;
         };
 
         res.render("shop", {
-            user: user,
-            product: currentProduct,
+            user,
+            product: products,
             category: categories,
             brand: brands,
-            totalPages: totalPages,
-            currentPage: currentPage,
-            getPaginationLink: getPaginationLink,
-            selectedCategory: req.query.category || null,
-            selectedBrand: req.query.brand || null
+            totalPages,
+            currentPage,
+            getPaginationLink,
+
+            // UI states
+            selectedCategory: category || null,
+            selectedBrand: brand || null,
+            selectedPrice: gt && lt ? `${gt}-${lt}` : "all",
+            selectedSort: sort || null,
+            searchKeyword: search
         });
+
     } catch (error) {
         console.log(error.message);
+        res.status(500).send("Internal Server Error");
     }
 };
+
 
 
 const searchProducts = async (req, res) => {
@@ -625,6 +683,49 @@ const filterProduct = async (req, res) => {
     } catch (error) {
         console.log(error.message);
         res.status(500).send("Internal Server Error");
+    }
+};
+
+const filterByPrice = async (req, res) => {
+    try {
+        const user = req.session.user;
+        const brands = await Brand.find({});
+        const categories = await Category.find({ isListed: true });
+        const findProducts = await Product.find({
+            $and: [
+                { salePrice: { $gt: req.query.gt } },
+                { salePrice: { $lt: req.query.lt } },
+                { isBlocked: false }
+            ]
+        });
+
+        let itemsPerPage = 6;
+        let currentPage = parseInt(req.query.page) || 1;
+        let startIndex = (currentPage - 1) * itemsPerPage;
+        let endIndex = startIndex + itemsPerPage;
+        let totalPages = Math.ceil(findProducts.length / itemsPerPage);
+        const currentProduct = findProducts.slice(startIndex, endIndex);
+
+        // Function to generate pagination links with query parameters
+        const getPaginationLink = (page) => {
+            const urlParams = new URLSearchParams(req.query);
+            urlParams.set('page', page);
+            return `/shop?${urlParams.toString()}`;
+        };
+
+        res.render("shop", {
+            user: user,
+            product: currentProduct,
+            category: categories,
+            brand: brands,
+            totalPages: totalPages,
+            currentPage: currentPage,
+            getPaginationLink: getPaginationLink,
+            selectedCategory: req.query.category || null,
+            selectedBrand: req.query.brand || null
+        });
+    } catch (error) {
+        console.log(error.message);
     }
 };
 

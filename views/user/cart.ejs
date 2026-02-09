@@ -102,10 +102,11 @@
 
 
                                                             <td class="action" data-title="Remove">
-                                                                <a class="btn btn-sm"
-                                                                    href="/deleteItem?id=<%= data[i].productDetails[0]._id %>">
-                                                                    <i class="fi-rs-trash"></i>
-                                                                </a>
+                                                             <button class="btn btn-sm"
+    onclick="confirmRemove('<%= data[i].productDetails[0]._id %>')">
+    <i class="fi-rs-trash"></i>
+</button>
+
                                                             </td>
 
 
@@ -173,6 +174,45 @@
         </section>
     </main>
 
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    function updateHeaderBadges(cartCount = null, wishlistCount = null) {
+    const cartBadge = document.getElementById("cartBadge");
+    const wishlistBadge = document.getElementById("wishlistBadge");
+
+    if (cartBadge && cartCount !== null) cartBadge.textContent = cartCount;
+    if (wishlistBadge && wishlistCount !== null) wishlistBadge.textContent = wishlistCount;
+}
+
+// Fetch updated counts from server
+async function fetchCartWishlistCounts() {
+    try {
+        const res = await fetch("/api/cart-wishlist-count");
+        const data = await res.json();
+        updateHeaderBadges(data.cartCount, data.wishlistCount);
+    } catch (err) {
+        console.error("Failed to fetch cart/wishlist counts", err);
+    }
+}
+
+function confirmRemove(productId) {
+    Swal.fire({
+        title: 'Remove item?',
+        text: "This product will be removed from your cart.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, remove it'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/deleteItem?id=${productId}`;
+        }
+    });
+}
+</script>
 
 
     <script>

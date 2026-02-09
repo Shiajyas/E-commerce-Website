@@ -74,6 +74,8 @@ Router.put('/returnRequests/decline/:returnId', isAdmin, adminController.decline
 // Order Management
 
 Router.get("/orderList", isAdmin, orderContoller.getOrderListPageAdmin)
+Router.get("/orderListData", orderContoller.getOrderListDataAdmin);
+
 Router.get("/orderDetailsAdmin", isAdmin, orderContoller.getOrderDetailsPageAdmin)
 Router.get("/changeStatus", isAdmin, orderContoller.changeOrderStatus)
 

@@ -55,11 +55,14 @@
                                                 <td class="text-right" data-title="Cart">
                                                     <button class="btn btn-success" onclick="addToCart('<%= data[i].productId %>')">Add to Cart</button>
                                                 </td>
-                                                <td class="action" data-title="Remove">
-                                                    <a href="/deleteWishlist?id=<%= data[i].productId %>">
-                                                        <i class="fi-rs-trash"></i>
-                                                    </a>
-                                                </td>
+                                               <td class="action" data-title="Remove">
+    <button 
+        class="btn btn-danger btn-sm"
+        onclick="removeFromWishlist('<%= data[i].productId %>')">
+        <i class="fi-rs-trash"></i>
+    </button>
+</td>
+
                                             </tr>
                                         <% } %>
                                     </tbody>
@@ -79,52 +82,127 @@
         
     </main>
 
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
 
-    <script>
-        function addToCart(prodId) {
-            
-            var quantity = 1;
-            $.ajax({
-                url: `/addToCart?id=${prodId}`,
-                method: "post",
-                data: {
-                    quantity: quantity
-                },
-                success: (res) => {
-                    if (res.status === true) {
 
-                        Swal.fire({
-                            title: 'Added to Cart!',
-                            text: 'Continue Shopping',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        })
-                    } else if (res.status === "Out of stock") {
-                        Swal.fire({
-                            title: 'Stock!!',
-                            text: "The product is out of stock",
-                            icon: 'error', // Corrected from 'fail' to 'error'
-                            timer: 2000,
-                        })
-                    } else {
-                        Swal.fire({
-                            title: 'You need to Login first',
-                            text: 'Continue Shopping',
-                            icon: 'warning',
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => { window.location.href = '/login' });
-                    }
-                },
-                error: (err) => {
-                    console.error(err, "hello");
-                    alert("error occured")
-                }
-            });
-        }
-    </script>
+<script>
+    
+function removeFromWishlist(productId) {
 
+    Swal.fire({
+        title: 'Remove from Wishlist?',
+        text: 'Are you sure you want to remove this item?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, remove it',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        fetch(`/deleteWishlist?id=${productId}`, {
+            method: "GET"
+        })
+        .then(res => res.json())
+        .then(res => {
+
+            if (res.status === true) {
+                Swal.fire({
+                    title: 'Removed!',
+                    text: 'Item removed from wishlist',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    
+                });
+
+            } else {
+                Swal.fire('Error', 'Unable to remove item', 'error');
+            }
+
+        })
+        .catch(err => {
+            console.error(err);
+            // Swal.fire('Error', 'Something went wrong!', 'error');
+            location.reload();
+        });
+    });
+}
+</script>
+
+
+<script>
+function addToCart(prodId) {
+
+    Swal.fire({
+        title: 'Add to Cart?',
+        text: 'Do you want to add this product to your cart?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, add it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        fetch(`/addToCart?id=${prodId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ quantity: 1 })
+        })
+        .then(res => res.json())
+        .then(res => {
+
+            if (res.status === true) {
+
+                Swal.fire({
+                    title: 'Added to Cart!',
+                    text: 'Product successfully added',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+
+                    // ✅ REMOVE FROM WISHLIST
+                   removeFromWishlist(prodId);
+
+                });
+
+            } else if (res.status === "Out of stock") {
+
+                Swal.fire({
+                    title: 'Out of Stock!',
+                    text: 'This product is currently unavailable',
+                    icon: 'error'
+                });
+
+            } else {
+
+                Swal.fire({
+                    title: 'Login Required',
+                    text: 'Please login to continue',
+                    icon: 'warning'
+                }).then(() => {
+                    window.location.href = '/login';
+                });
+
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Error', 'Something went wrong!', 'error');
+        });
+    });
+}
+</script>
 
 
 

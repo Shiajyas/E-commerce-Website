@@ -1,122 +1,157 @@
 <%- include("../partials/header") %>
-   <!-- SweetAlert CDN -->
-   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-   <!-- Axios CDN -->
-   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-   <style>
-    /* Style for the form */
-    .return-form {
-        max-width: 600px;
-        margin: 0 auto;
+
+<!-- SweetAlert2 & Axios -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<style>
+/* Center container */
+.return-form-container {
+    max-width: 650px;
+    margin: 50px auto;
+    padding: 30px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Titles */
+.return-form-container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+    font-weight: 700;
+}
+.return-form-container h3 {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    color: #4CAF50;
+    font-weight: 600;
+}
+
+/* User & Product info */
+.return-form-container p {
+    margin: 5px 0;
+    color: #555;
+}
+
+/* Inputs */
+.return-form-container input[type="text"],
+.return-form-container input[type="number"],
+.return-form-container textarea {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 8px 0 20px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    transition: border 0.2s ease;
+}
+
+.return-form-container input:focus,
+.return-form-container textarea:focus {
+    border-color: #4CAF50;
+    outline: none;
+}
+
+/* Button */
+.return-form-container button {
+    background-color: #4CAF50;
+    color: #fff;
+    font-weight: 600;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s ease;
+}
+
+.return-form-container button:hover {
+    background-color: #45a049;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .return-form-container {
         padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        background-color: #f9f9f9;
+        margin: 20px;
     }
-
-    .return-form label {
-        font-weight: bold;
-    }
-
-    .return-form input[type="text"],
-    .return-form input[type="number"],
-    .return-form textarea {
-        width: 100%;
-        padding: 10px;
-        margin: 5px 0 20px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-    }
-
-    .return-form textarea {
-        height: 100px;
-    }
-
-    .return-form button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 14px 20px;
-        margin: 8px 0;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        width: 100%;
-    }
-
-    .return-form button:hover {
-        background-color: #45a049;
-    }
+}
 </style>
-</head>
-<body>
-<!-- Return Request Form -->
-<div class="return-form">
+
+<div class="return-form-container">
     <h2>Return Request Form</h2>
-    <!-- Show user details -->
-    <p>User Name: <%= user.name %></p>
-    <p>Email: <%= user.email %></p>
 
-    <!-- Show product details -->
+    <!-- User Info -->
+    <div>
+        <p><strong>User Name:</strong> <%= user.name %></p>
+        <p><strong>Email:</strong> <%= user.email %></p>
+    </div>
+
+    <!-- Product Info -->
     <h3>Product Details</h3>
-    <p>Product Name: <%= product.name %></p>
-    <p>Product Price: <%= product.price %></p>
-    <p>Product Quantity: <%= product.quantity %></p>
+    <p><strong>Product Name:</strong> <%= product.name %></p>
+    <p><strong>Price:</strong> ₹<%= product.price %></p>
+    <p><strong>Quantity:</strong> <%= product.quantity %></p>
 
-    <!-- Return Request Form -->
+    <!-- Form -->
     <form id="returnForm">
         <input type="hidden" name="userId" value="<%= user._id %>">
         <input type="hidden" name="orderId" value="<%= order._id %>">
         <input type="hidden" name="productId" value="<%= product._id %>">
-        <div class="mb-3">
-            <label for="reason">Reason for Return</label>
-            <textarea id="reason" name="reason" required></textarea>
-        </div>
-        <div class="mb-3">
-            <label for="quantity">Quantity to Return</label>
-            <input type="number" id="quantity" name="quantity" placeholder="<%= product.quantity %>" min="1" max="<%= product.quantity %>" required>
-        </div>
+
+        <label for="reason">Reason for Return</label>
+        <textarea id="reason" name="reason" required placeholder="Enter your reason here..."></textarea>
+
+        <label for="quantity">Quantity to Return</label>
+        <input type="number" id="quantity" name="quantity" min="1" max="<%= product.quantity %>" value="1" required>
+
         <button type="submit">Submit Return Request</button>
     </form>
 </div>
 
-<!-- Script -->
 <script>
-    // Function to handle form submission
-    function submitReturnRequest(event) {
-        event.preventDefault(); // Prevent default form submission
-        
-        // Get form data
-        const form = document.getElementById('returnForm');
-        const formData = new FormData(form);
-        const data = {};
-        formData.forEach((value, key) => {
-            data[key] = value;
-        });
+// Form submission with SweetAlert confirmation
+document.getElementById('returnForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
 
-        // Make AJAX request
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {};
+    formData.forEach((value, key) => { data[key] = value; });
+
+    // SweetAlert confirmation
+    const result = await Swal.fire({
+        title: 'Confirm Return',
+        html: `Are you sure you want to return <strong>${data.quantity}</strong> item(s) of <strong>${"<%= product.name %>"}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, submit',
+        cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+        // Send request via Axios
         axios.post('/raiseReturnRequest', data)
             .then(response => {
-                // Show success message
                 Swal.fire({
                     icon: 'success',
                     title: 'Success',
-                    text: response.data.message,
+                    text: response.data.message
                 }).then(() => {
-                    // Redirect to /profile after showing the success message
                     window.location.href = '/profile';
                 });
             })
             .catch(error => {
-                // Show error message
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: error.response.data.message,
+                    text: error.response?.data?.message || 'Something went wrong!'
                 });
             });
     }
-
-    // Add event listener to form submission
-    document.getElementById('returnForm').addEventListener('submit', submitReturnRequest);
+});
 </script>

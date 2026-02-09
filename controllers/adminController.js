@@ -11,6 +11,7 @@ const Return = require("../models/returnSchema")
 const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
 const Brand = require("../models/brandSchema")
+const puppeteer = require("puppeteer");
 
 // const getDashboard = async (req, res) => {
 //     try {
@@ -155,479 +156,954 @@ const getSalesReportPage = async (req, res) => {
     }
 }
 
+
+// Helper function to enrich orders with product details
+const enrichOrders = async (orders) => {
+  return await Promise.all(
+    orders.map(async (order) => {
+      const productRef = order.product?.[0]?._id || order.product?.[0]?.productId;
+      const product = productRef
+        ? await Product.findById(productRef)
+            .select("productName brand category price")
+            .lean()
+        : null;
+
+      return {
+        ...order,
+        productName: product?.productName || "Unknown",
+        brand: product?.brand || "Unknown",
+        category: product?.category || "Unknown",
+        productPrice: product?.price || 0
+      };
+    })
+  );
+};
+
+const paginateOrders = (orders, page = 1, itemsPerPage = 5) => {
+  const totalPages = Math.ceil(orders.length / itemsPerPage);
+  const currentOrder = orders.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  return { currentOrder, totalPages };
+};
+
+// SALES TODAY
 const salesToday = async (req, res) => {
-    try {
-        let today = new Date()
-        const startOfTheDay = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-            0,
-            0,
-            0,
-            0
-        )
+  try {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
-        const endOfTheDay = new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-            23,
-            59,
-            59,
-            999
-        )
+    let orders = await Order.find({
+      createdOn: { $gte: start, $lte: end },
+      status: "Delivered"
+    }).sort({ createdOn: -1 }).lean();
 
-        const orders = await Order.aggregate([
-            {
-                $match: {
-                    createdOn: {
-                        $gte: startOfTheDay,
-                        $lt: endOfTheDay
-                    },
-                    status: "Delivered"
-                }
-            }
-        ]).sort({ createdOn: -1 })
+    orders = await enrichOrders(orders);
 
+    const { currentOrder, totalPages } = paginateOrders(orders, parseInt(req.query.page) || 1);
 
-        let itemsPerPage = 5
-        let currentPage = parseInt(req.query.page) || 1
-        let startIndex = (currentPage - 1) * itemsPerPage
-        let endIndex = startIndex + itemsPerPage
-        let totalPages = Math.ceil(orders.length / 3)
-        const currentOrder = orders.slice(startIndex, endIndex)
+    res.render("salesReport", {
+      data: currentOrder,
+      totalPages,
+      currentPage: parseInt(req.query.page) || 1,
+      salesToday: true,
+      filterQuery: buildFilterQuery(req)
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
 
-        console.log(currentOrder, "currOrder");
-
-        res.render("salesReport", { data: currentOrder, totalPages, currentPage, salesToday: true })
-
-    } catch (error) {
-        console.log(error.message);
-    }
-}
-
-
+// SALES WEEKLY
 const salesWeekly = async (req, res) => {
-    try {
-        let currentDate = new Date()
-        const startOfTheWeek = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth(),
-            currentDate.getDate() - currentDate.getDay()
-        )
+  try {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - today.getDay()), 23, 59, 59, 999);
 
-        const endOfTheWeek = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth(),
-            currentDate.getDate() + (6 - currentDate.getDay()),
-            23,
-            59,
-            59,
-            999
-        )
+    let orders = await Order.find({
+      createdOn: { $gte: start, $lte: end },
+      status: "Delivered"
+    }).sort({ createdOn: -1 }).lean();
 
-        const orders = await Order.aggregate([
-            {
-                $match: {
-                    createdOn: {
-                        $gte: startOfTheWeek,
-                        $lt: endOfTheWeek
-                    },
-                    status: "Delivered"
-                }
-            }
-        ]).sort({ createdOn: -1 })
+    orders = await enrichOrders(orders);
+    const { currentOrder, totalPages } = paginateOrders(orders, parseInt(req.query.page) || 1);
 
-        let itemsPerPage = 5
-        let currentPage = parseInt(req.query.page) || 1
-        let startIndex = (currentPage - 1) * itemsPerPage
-        let endIndex = startIndex + itemsPerPage
-        let totalPages = Math.ceil(orders.length / 3)
-        const currentOrder = orders.slice(startIndex, endIndex)
+    res.render("salesReport", {
+      data: currentOrder,
+      totalPages,
+      currentPage: parseInt(req.query.page) || 1,
+      salesWeekly: true,
+      filterQuery: buildFilterQuery(req)
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
 
-        res.render("salesReport", { data: currentOrder, totalPages, currentPage, salesWeekly: true })
-
-    } catch (error) {
-        console.log(error.message);
-    }
-}
-
-
+// SALES MONTHLY
 const salesMonthly = async (req, res) => {
-    try {
-        let currentMonth = new Date().getMonth() + 1
-        const startOfTheMonth = new Date(
-            new Date().getFullYear(),
-            currentMonth - 1, 
-            1, 0, 0, 0, 0
-        )
-        const endOfTheMonth = new Date(
-            new Date().getFullYear(),
-            currentMonth,
-            0, 23, 59, 59, 999
-        )
-        const orders = await Order.aggregate([
-            {
-                $match: {
-                    createdOn: {
-                        $gte: startOfTheMonth,
-                        $lt: endOfTheMonth
-                    },
-                    status: "Delivered"
-                }
-            }
-        ]).sort({ createdOn: -1 })  
-        // .then(data=>console.log(data))
-        console.log("ethi");
-        console.log(orders);
+  try {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-        let itemsPerPage = 5
-        let currentPage = parseInt(req.query.page) || 1
-        let startIndex = (currentPage - 1) * itemsPerPage
-        let endIndex = startIndex + itemsPerPage
-        let totalPages = Math.ceil(orders.length / 3)
-        const currentOrder = orders.slice(startIndex, endIndex)
+    let orders = await Order.find({
+      createdOn: { $gte: start, $lte: end },
+      status: "Delivered"
+    }).sort({ createdOn: -1 }).lean();
 
-        res.render("salesReport", { data: currentOrder, totalPages, currentPage, salesMonthly: true })
+    orders = await enrichOrders(orders);
+    const { currentOrder, totalPages } = paginateOrders(orders, parseInt(req.query.page) || 1);
 
+    res.render("salesReport", {
+      data: currentOrder,
+      totalPages,
+      currentPage: parseInt(req.query.page) || 1,
+      salesMonthly: true,
+      filterQuery: buildFilterQuery(req)
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
 
-    } catch (error) {
-        console.log(error.message);
-    }
-}
-
-
+// SALES YEARLY
 const salesYearly = async (req, res) => {
-    try {
-        const currentYear = new Date().getFullYear()
-        const startofYear = new Date(currentYear, 0, 1, 0, 0, 0, 0)
-        const endofYear = new Date(currentYear, 11, 31, 23, 59, 59, 999)
+  try {
+    const year = new Date().getFullYear();
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31, 23, 59, 59, 999);
 
-        const orders = await Order.aggregate([
-            {
-                $match: {
-                    createdOn: {
-                        $gte: startofYear,
-                        $lt: endofYear
-                    },
-                    status: "Delivered"
-                }
-            }
-        ])
+    let orders = await Order.find({
+      createdOn: { $gte: start, $lte: end },
+      status: "Delivered"
+    }).sort({ createdOn: -1 }).lean();
+
+    orders = await enrichOrders(orders);
+    const { currentOrder, totalPages } = paginateOrders(orders, parseInt(req.query.page) || 1);
+
+    res.render("salesReport", {
+      data: currentOrder,
+      totalPages,
+      currentPage: parseInt(req.query.page) || 1,
+      salesYearly: true,
+      filterQuery: buildFilterQuery(req)
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+// DATE RANGE FILTER
+const dateRangeFilter = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) return res.status(400).send("Start date and end date are required");
+
+    const from = new Date(startDate + "T00:00:00");
+    const to = new Date(endDate + "T23:59:59");
+
+    let orders = await Order.find({
+      createdOn: { $gte: from, $lte: to },
+      status: "Delivered"
+    }).sort({ createdOn: -1 }).lean();
+
+    orders = await enrichOrders(orders);
+    const { currentOrder, totalPages } = paginateOrders(orders, parseInt(req.query.page) || 1);
+
+    res.render("salesReport", {
+      data: currentOrder,
+      totalPages,
+      currentPage: parseInt(req.query.page) || 1,
+      startDate,
+      endDate,
+      filterQuery: buildFilterQuery(req)
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+// DATE WISE FILTER
+const dateWiseFilter = async (req, res) => {
+  try {
+    const date = moment(req.query.date).startOf('day').toDate();
+    const endOfDay = moment(date).endOf('day').toDate();
+
+    let orders = await Order.find({
+      createdOn: { $gte: date, $lte: endOfDay },
+      status: "Delivered"
+    }).sort({ createdOn: -1 }).lean();
+
+    orders = await enrichOrders(orders);
+    const { currentOrder, totalPages } = paginateOrders(orders, parseInt(req.query.page) || 1);
+
+    res.render("salesReport", {
+      data: currentOrder,
+      totalPages,
+      currentPage: parseInt(req.query.page) || 1,
+      date,
+      filterQuery: buildFilterQuery(req)
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
 
 
-        let itemsPerPage = 5
-        let currentPage = parseInt(req.query.page) || 1
-        let startIndex = (currentPage - 1) * itemsPerPage
-        let endIndex = startIndex + itemsPerPage
-        let totalPages = Math.ceil(orders.length / 3)
-        const currentOrder = orders.slice(startIndex, endIndex)
 
-        res.render("salesReport", { data: currentOrder, totalPages, currentPage, salesYearly: true })
-
-    } catch (error) {
-        console.log(error.message);
-    }
+function buildFilterQuery(req) {
+    const query = [];
+    if (req.query.day) query.push(`day=${req.query.day}`);
+    if (req.query.date) query.push(`date=${req.query.date}`);
+    if (req.query.startDate && req.query.endDate)
+        query.push(`startDate=${req.query.startDate}&endDate=${req.query.endDate}`);
+    return query.length > 0 ? '&' + query.join('&') : '';
 }
+
+
+
+
 
 const generatePdf = async (req, res) => {
-    try {
-        const doc = new PDFDocument({ margin: 20 });
-        const filename = 'sales-report.pdf';
-        const orders = req.body;
+  try {
+    const { day, date, startDate, endDate } = req.query;
 
-        const logoPath = "./public/user-assets/imgs/theme/ThinkThankz-logo/cover.png"; // Replace with the actual path to your company logo
+    /* ------------------------------
+       1️⃣ BUILD FILTER
+    -------------------------------*/
+    let filter = { status: "Delivered" };
 
-        // Add company logo at the top left side of the heading
-        doc.image(logoPath, {
-            fit: [150, 150], // Adjust size
-            align: 'left',
-            valign: 'top'
-        }).moveDown(2);
-
-        // Initialize totals
-        let totalOrders = 0;
-        let totalAmount = 0;
-        let totalProductDiscount = 0;
-        let totalCouponDiscount = 0;
-        let totalFinalPrice = 0;
-
-        // Calculate totals and log every field
-        orders.forEach((order, index) => {
-            // Calculate totals
-            totalOrders += 1;
-            totalAmount += order.totalAmount || 0;
-            totalProductDiscount += order.productCutoff || 0;
-            totalCouponDiscount += order.couponCutoff || 0;
-            totalFinalPrice += order.finalPrice || 0;
-        });
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-        doc.pipe(res);
-
-        // Set up document
-        doc.fontSize(20).text('Sales Report', { align: 'center' }).moveDown(1.5);
-
-        // Add headers
-        const headers = [
-            'Order ID', 'Name', 'Date', 'Payment', 'Status',
-            'Total', 'Product Discount', 'Coupon Discount', 'Final Price'
-        ];
-        const headerWidths = [90, 60, 60, 60, 50, 50, 50, 50, 50]; // Adjusted widths
-        let headerX = 20;
-        let headerY = doc.y; // Adjusted header Y position
-        const headerPadding = 30; // Padding between header and data
-
-        headers.forEach((header, index) => {
-            doc.fontSize(10).text(header, headerX, headerY, { width: headerWidths[index], align: 'center' });
-            headerX += headerWidths[index];
-        });
-
-        doc.moveTo(20, headerY + headerPadding)
-            .lineTo(doc.page.width - 20, headerY + headerPadding)
-            .stroke();
-
-        let dataY = headerY + headerPadding + 10; // Adjusted data Y position with additional padding
-
-        // Add order data
-        orders.forEach(order => {
-            const cleanedDataId = order.dataId || '';
-            const cleanedName = order.name || '';
-            const cleanedDate = order.date || '';
-            const cleanedPayment = order.payment || '';
-            const cleanedStatus = order.status || '';
-            const cleanedTotal = order.totalAmount ? order.totalAmount.toFixed(2) : '0.00';
-            const cleanedProductDiscount = order.productCutoff ? order.productCutoff.toFixed(2) : '0.00';
-            const cleanedCouponDiscount = order.couponCutoff ? order.couponCutoff.toFixed(2) : '0.00';
-            const cleanedFinalPrice = order.finalPrice ? order.finalPrice.toFixed(2) : '0.00';
-
-            const data = [
-                cleanedDataId, cleanedName, cleanedDate, cleanedPayment, cleanedStatus,
-                `₹${cleanedTotal}`, `₹${cleanedProductDiscount}`, `₹${cleanedCouponDiscount}`, `₹${cleanedFinalPrice}`
-            ];
-
-            let dataX = 20;
-            data.forEach((item, index) => {
-                doc.fontSize(10).text(item, dataX, dataY, { width: headerWidths[index], align: 'center' });
-                dataX += headerWidths[index];
-            });
-
-            dataY += 20;
-
-            if (dataY > doc.page.height - 50) {
-                doc.addPage();
-                dataY = 50;
-            }
-        });
-
-        // Add totals summary
-        doc.addPage();
-        doc.fontSize(14).text('Summary', { align: 'center' }).moveDown(1.5);
-
-        const summaryY = doc.y;
-        doc.fontSize(12)
-            .text(`Overall Sales Count: ${totalOrders}`, { align: 'left' })
-            .moveDown(0.5)
-            .text(`Overall Order Amount: ₹${totalAmount.toFixed(2)}`, { align: 'left' })
-            .moveDown(0.5)
-            .text(`Overall Product Discount: ₹${totalProductDiscount.toFixed(2)}`, { align: 'left' })
-            .moveDown(0.5)
-            .text(`Overall Coupon Discount: ₹${totalCouponDiscount.toFixed(2)}`, { align: 'left' })
-            .moveDown(0.5)
-            .text(`Overall credited Amount: ₹${totalFinalPrice.toFixed(2)}`, { align: 'left' });
-
-        doc.end();
-    } catch (error) {
-        console.log(error.message);
-        res.status(500).send('Error generating PDF report');
+    if (day === "salesToday") {
+      filter.createdOn = {
+        $gte: moment().startOf("day").toDate(),
+        $lte: moment().endOf("day").toDate(),
+      };
     }
-};
 
+    if (day === "salesWeekly") {
+      filter.createdOn = {
+        $gte: moment().startOf("week").toDate(),
+        $lte: moment().endOf("week").toDate(),
+      };
+    }
+
+    if (day === "salesMonthly") {
+      filter.createdOn = {
+        $gte: moment().startOf("month").toDate(),
+        $lte: moment().endOf("month").toDate(),
+      };
+    }
+
+    if (day === "salesYearly") {
+      filter.createdOn = {
+        $gte: moment().startOf("year").toDate(),
+        $lte: moment().endOf("year").toDate(),
+      };
+    }
+
+    if (date) {
+      filter.createdOn = {
+        $gte: moment(date).startOf("day").toDate(),
+        $lte: moment(date).endOf("day").toDate(),
+      };
+    }
+
+    if (startDate && endDate) {
+      filter.createdOn = {
+        $gte: moment(startDate).startOf("day").toDate(),
+        $lte: moment(endDate).endOf("day").toDate(),
+      };
+    }
+
+    /* ------------------------------
+       2️⃣ FETCH ORDERS
+    -------------------------------*/
+    const orders = await Order.find(filter).lean();
+    if (!orders.length) return res.status(400).send("No sales data found");
+
+    /* ------------------------------
+       3️⃣ PRELOAD CATEGORY OFFERS
+    -------------------------------*/
+    const categories = await Category.find().lean();
+    const categoryOfferMap = {};
+    categories.forEach(c => {
+      categoryOfferMap[c.name] = c.categoryOffer || 0;
+    });
+
+    /* ------------------------------
+       4️⃣ ENRICH ORDERS
+    -------------------------------*/
+    const enrichedOrders = [];
+
+    for (const order of orders) {
+      for (const item of order.product) {
+
+        const basePrice = Number(item.regularPrice || item.price);
+        const qty = Number(item.quantity || 1);
+
+        const productDiscount = Number(item.productOffer || 0);
+        const categoryOfferPercent = categoryOfferMap[item.category] || 0;
+        const categoryDiscount =
+          ((basePrice - productDiscount) * categoryOfferPercent) / 100;
+
+        const couponDiscount = order.couponDiscount || 0;
+
+        const finalPrice =
+          (basePrice - productDiscount - categoryDiscount - couponDiscount) * qty;
+
+        enrichedOrders.push({
+          customer: order.address?.[0]?.name || "Unknown",
+          productName: item.name,
+          brand: item.brand,
+          category: item.category,
+          orderDate: moment(order.createdOn).format("DD-MM-YYYY"),
+deliveredDate: order.deliveredAt
+  ? moment(order.deliveredAt).format("DD-MM-YYYY")
+  : moment(order.updatedAt).format("DD-MM-YYYY"),
+
+          qty,
+          basePrice,
+          productDiscount,
+          categoryDiscount,
+          couponDiscount,
+          finalPrice,
+        });
+      }
+    }
+
+    /* ------------------------------
+       5️⃣ AGGREGATION
+    -------------------------------*/
+    let totalRevenue = 0,
+        totalProductDiscount = 0,
+        totalCategoryDiscount = 0,
+        totalCouponDiscount = 0;
+
+    const brandSummary = {};
+    const categorySummary = {};
+    const productSummary = {};
+
+    enrichedOrders.forEach(o => {
+      totalRevenue += o.finalPrice;
+      totalProductDiscount += o.productDiscount;
+      totalCategoryDiscount += o.categoryDiscount;
+      totalCouponDiscount += o.couponDiscount;
+
+      brandSummary[o.brand] ??= { count: 0, revenue: 0 };
+      brandSummary[o.brand].count++;
+      brandSummary[o.brand].revenue += o.finalPrice;
+
+      categorySummary[o.category] ??= { count: 0, revenue: 0 };
+      categorySummary[o.category].count++;
+      categorySummary[o.category].revenue += o.finalPrice;
+
+      productSummary[o.productName] ??= { count: 0, revenue: 0 };
+      productSummary[o.productName].count++;
+      productSummary[o.productName].revenue += o.finalPrice;
+    });
+
+    /* ------------------------------
+       6️⃣ PDF HTML
+    -------------------------------*/
+    const tableRows = enrichedOrders.map(o => `
+      <tr>
+        <td>${o.customer}</td>
+        <td>${o.productName}</td>
+       <td>${o.orderDate}</td>
+<td>${o.deliveredDate}</td>
+
+        <td>${o.brand}</td>
+        <td>${o.category}</td>
+        <td>${o.qty}</td>
+        <td>₹${o.basePrice}</td>
+        <td>₹${o.productDiscount}</td>
+        <td>₹${o.categoryDiscount.toFixed(2)}</td>
+        <td>₹${o.couponDiscount}</td>
+        <td><b>₹${o.finalPrice.toFixed(2)}</b></td>
+      </tr>
+    `).join("");
+
+    const summaryTable = `
+      <tr><th>Total Revenue</th><td>₹${totalRevenue.toFixed(2)}</td></tr>
+      <tr><th>Product Discount</th><td>₹${totalProductDiscount.toFixed(2)}</td></tr>
+      <tr><th>Category Discount</th><td>₹${totalCategoryDiscount.toFixed(2)}</td></tr>
+      <tr><th>Coupon Discount</th><td>₹${totalCouponDiscount.toFixed(2)}</td></tr>
+    `;
+
+    const buildSummary = obj =>
+      Object.entries(obj).map(([k, v]) =>
+        `<tr><td>${k}</td><td>${v.count}</td><td>₹${v.revenue.toFixed(2)}</td></tr>`
+      ).join("");
+
+    const html = `
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial; padding: 25px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ccc; padding: 6px; font-size: 11px; text-align: center; }
+        th { background: #f2f2f2; }
+        h2 { margin-top: 35px; }
+      </style>
+    </head>
+    <body>
+
+    <h1>Sales Report</h1>
+
+    <table>
+    <tr>
+  <th>Customer</th>
+  <th>Product</th>
+  <th>Order Date</th>
+  <th>Delivered Date</th>
+  <th>Brand</th>
+  <th>Category</th>
+  <th>Qty</th>
+  <th>Base</th>
+  <th>Prod Off</th>
+  <th>Cat Off</th>
+  <th>Coupon</th>
+  <th>Final</th>
+</tr>
+
+      ${tableRows}
+    </table>
+
+    <h2>Overall Summary</h2>
+    <table>${summaryTable}</table>
+
+    <h2>Brand Summary</h2>
+    <table><tr><th>Brand</th><th>Count</th><th>Revenue</th></tr>${buildSummary(brandSummary)}</table>
+
+    <h2>Category Summary</h2>
+    <table><tr><th>Category</th><th>Count</th><th>Revenue</th></tr>${buildSummary(categorySummary)}</table>
+
+    <h2>Product Summary</h2>
+    <table><tr><th>Product</th><th>Count</th><th>Revenue</th></tr>${buildSummary(productSummary)}</table>
+
+    </body>
+    </html>`;
+
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
+    const page = await browser.newPage();
+    await page.setContent(html);
+    const pdf = await page.pdf({ format: "A4", printBackground: true });
+    await browser.close();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=sales-report.pdf");
+    res.end(pdf);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("PDF generation failed");
+  }
+};
 
 const downloadExcel = async (req, res) => {
-    try {
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Sales Report');
+  try {
+    const { day, date, startDate, endDate } = req.query;
 
-        // Set column headers
-        worksheet.columns = [
-            { header: 'Order ID', key: 'orderId', width: 30 },
-            { header: 'Customer', key: 'customer', width: 20 },
-            { header: 'Product', key: 'product', width: 20 },
-            { header: 'Date', key: 'date', width: 20 },
-            { header: 'Payment', key: 'payment', width: 15 },
-            { header: 'Total Amount', key: 'totalAmount', width: 15 },
-            { header: 'Product Cutoff', key: 'productCutoff', width: 15 },
-            { header: 'Coupon Cutoff', key: 'couponCutoff', width: 15 },
-            { header: 'Final Price', key: 'finalPrice', width: 15 },
-            { header: 'Status', key: 'status', width: 15 },
-        ];
+    /* ------------------------------
+       1️⃣ BUILD FILTER
+    -------------------------------*/
+    let filter = { status: "Delivered" };
 
-        const orders = req.body;
-
-        let overallFinalPrice = 0;
-        let overallProductCutoff = 0;
-        let overallCouponCutoff = 0;
-        let overallOrderAmount = 0;
-        let salesCount = orders.length;
-
-        // Add individual orders to the worksheet
-        orders.forEach(order => {
-            const finalPrice = order.finalPrice;
-            const couponCutoff = order.couponCutoff;
-            const productCutoff = order.productCutoff;
-            const totalAmount = order.totalAmount;
-
-            overallFinalPrice += finalPrice;
-            overallCouponCutoff += couponCutoff;
-            overallProductCutoff += productCutoff;
-            overallOrderAmount += totalAmount;
-
-            worksheet.addRow({
-                orderId: order.dataId,
-                customer: order.name,
-                product: order.product,
-                date: order.date,
-                payment: order.payment,
-                totalAmount: totalAmount,
-                productCutoff: productCutoff,
-                couponCutoff: couponCutoff,
-                finalPrice: finalPrice,
-                status: order.status,
-            });
-        });
-
-        // Add overall summary section
-        worksheet.addRow({ orderId: '' });
-        worksheet.addRow({ orderId: 'Overall Summary' });
-        worksheet.addRow({ orderId: 'Sales Count:', customer: salesCount });
-        worksheet.addRow({ orderId: 'Overall Order Amount:', customer: overallOrderAmount });
-        worksheet.addRow({ orderId: 'Overall product discount:', customer: overallProductCutoff });
-        worksheet.addRow({ orderId: 'Overall coupon discount:', customer: overallCouponCutoff });
-        worksheet.addRow({ orderId: 'Overall Discount:', customer: overallProductCutoff + overallCouponCutoff });
-        worksheet.addRow({ orderId: 'Overall credited Amount: ', customer: overallFinalPrice });
-
-        // Add styling to the overall summary section
-        const overallSummaryRow = worksheet.lastRow;
-        overallSummaryRow.font = { bold: true };
-        overallSummaryRow.alignment = { vertical: 'middle' };
-
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=salesReport.xlsx`);
-
-        await workbook.xlsx.write(res);
-        res.end();
-    } catch (error) {
-        console.log(error);
-        res.status(500).send('Internal Server Error');
+    if (day === "salesToday") {
+      filter.createdOn = {
+        $gte: moment().startOf("day").toDate(),
+        $lte: moment().endOf("day").toDate(),
+      };
     }
-}
 
-const generateLedgerPdf = async (req, res) => {
-    try {
-        const doc = new PDFDocument({ margin: 20 });
-        const filename = 'ledger-report.pdf';
-        const orders = req.body;
-     
-        const logoPath = "./public/user-assets/imgs/theme/ThinkThankz-logo/cover.png"; // Replace with the actual path to your company logo
-
-        // Add company logo at the top left side of the heading
-        doc.image(logoPath, {
-            fit: [150, 150], // Adjust size
-            align: 'left',
-            valign: 'top'
-        });
-
-        // Set up document
-        doc.fontSize(20).text('Ledger Report', { align: 'center' }).moveDown(1.5);
-
-        // Initialize totals
-        let totalDebit = 0;
-        let totalCredit = 0;
-        let totalGST = 0;
-
-        // Calculate totals
-        orders.forEach((order) => {
-            const debitAmount = order.totalAmount || 0;
-            const creditAmount = order.finalPrice || 0;
-            const gst = creditAmount * 0.09; // GST is 9% of the credit
-            totalDebit += debitAmount;
-            totalCredit += creditAmount + gst; // Add GST to credit
-            totalGST += gst; // Accumulate total GST
-        });
- 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-        doc.pipe(res);
-
-        // Add headers
-        const headers = ['Date', 'Description', 'Debit (₹)', 'Credit (₹)', 'Balance (₹)'];
-        const headerWidths = [100, 200, 100, 100, 100]; // Adjusted widths
-        let headerX = 20;
-        let headerY = doc.y;
-        const headerPadding = 30;
-
-        headers.forEach((header, index) => {
-            doc.fontSize(10).text(header, headerX, headerY, { width: headerWidths[index], align: 'center' });
-            headerX += headerWidths[index];
-        });
-
-        doc.moveTo(20, headerY + headerPadding)
-            .lineTo(doc.page.width - 20, headerY + headerPadding)
-            .stroke();
-
-        let dataY = headerY + headerPadding + 10;
-        let balance = 0;
-
-        // Add order data to ledger
-        orders.forEach(order => {
-            const date = order.date || '';
-            const description = `Order ID: ${order.dataId} - ${order.name}` || '';
-            const debit = order.totalAmount ? order.totalAmount.toFixed(2) : '0.00';
-            const creditAmount = order.finalPrice || 0;
-            const gst = creditAmount * 0.09; // GST is 9% of the credit
-            const credit = (creditAmount + gst).toFixed(2); // Credit after adding GST
-
-            balance += creditAmount + gst - order.totalAmount;
-
-            const data = [date, description, `₹${debit}`, `₹${credit}`, `₹${balance.toFixed(2)}`];
-
-            let dataX = 20;
-            data.forEach((item, index) => {
-                doc.fontSize(10).text(item, dataX, dataY, { width: headerWidths[index], align: 'center' });
-                dataX += headerWidths[index];
-            });
-
-            dataY += 20;
-
-            if (dataY > doc.page.height - 50) {
-                doc.addPage();
-                dataY = 50; 
-            }
-        });
-
-        // Add totals summary
-        doc.addPage(); 
-        doc.fontSize(14).text('Summary', { align: 'center' }).moveDown(1.5);
-
-        const summaryY = doc.y;
-        doc.fontSize(12)
-            .text(`Total Debit: ₹${totalDebit.toFixed(2)}`, { align: 'left' })
-            .moveDown(0.5)
-            .text(`Total Credit (including GST): ₹${totalCredit.toFixed(2)}`, { align: 'left' })
-            .moveDown(0.5)
-            .text(`Total GST: ₹${totalGST.toFixed(2)}`, { align: 'left' }) // Show total GST
-            .moveDown(0.5)
-            .text(`Final Balance: ₹${balance.toFixed(2)}`, { align: 'left' });
-
-        doc.end();
-    } catch (error) {
-        console.log(error.message);
-        res.status(500).send('Error generating Ledger PDF report');
+    if (day === "salesWeekly") {
+      filter.createdOn = {
+        $gte: moment().startOf("week").toDate(),
+        $lte: moment().endOf("week").toDate(),
+      };
     }
+
+    if (day === "salesMonthly") {
+      filter.createdOn = {
+        $gte: moment().startOf("month").toDate(),
+        $lte: moment().endOf("month").toDate(),
+      };
+    }
+
+    if (day === "salesYearly") {
+      filter.createdOn = {
+        $gte: moment().startOf("year").toDate(),
+        $lte: moment().endOf("year").toDate(),
+      };
+    }
+
+    if (date) {
+      filter.createdOn = {
+        $gte: moment(date).startOf("day").toDate(),
+        $lte: moment(date).endOf("day").toDate(),
+      };
+    }
+
+    if (startDate && endDate) {
+      filter.createdOn = {
+        $gte: moment(startDate).startOf("day").toDate(),
+        $lte: moment(endDate).endOf("day").toDate(),
+      };
+    }
+
+    /* ------------------------------
+       2️⃣ FETCH ORDERS
+    -------------------------------*/
+    const orders = await Order.find(filter).lean();
+    if (!orders.length) {
+      return res.status(400).send("No sales data found");
+    }
+
+    /* ------------------------------
+       3️⃣ PRELOAD CATEGORY OFFERS
+    -------------------------------*/
+    const categories = await Category.find().lean();
+    const categoryOfferMap = {};
+    categories.forEach(c => {
+      categoryOfferMap[c.name] = c.categoryOffer || 0;
+    });
+
+    /* ------------------------------
+       4️⃣ ENRICH ORDERS (ITEM LEVEL)
+    -------------------------------*/
+    const enrichedOrders = [];
+
+    for (const order of orders) {
+      for (const item of order.product) {
+
+        const basePrice = Number(item.regularPrice || item.price || 0);
+        const qty = Number(item.quantity || 1);
+
+        const productDiscount = Number(item.productOffer || 0);
+        const categoryOfferPercent = categoryOfferMap[item.category] || 0;
+
+        const categoryDiscount =
+          ((basePrice - productDiscount) * categoryOfferPercent) / 100;
+
+        const couponDiscount =
+          order.couponDiscount
+            ? order.couponDiscount / order.product.length
+            : 0;
+
+        const finalPrice =
+          (basePrice - productDiscount - categoryDiscount - couponDiscount) * qty;
+
+        enrichedOrders.push({
+          customer: order.address?.[0]?.name || "Unknown",
+          productName: item.name,
+          brand: item.brand,
+          category: item.category,
+          orderDate: moment(order.createdOn).format("DD-MM-YYYY"),
+          deliveredDate: order.deliveredAt
+            ? moment(order.deliveredAt).format("DD-MM-YYYY")
+            : moment(order.updatedAt).format("DD-MM-YYYY"),
+          qty,
+          basePrice,
+          productDiscount,
+          categoryDiscount,
+          couponDiscount,
+          finalPrice
+        });
+      }
+    }
+
+    /* ------------------------------
+       5️⃣ AGGREGATION
+    -------------------------------*/
+    let totalRevenue = 0;
+    let totalProductDiscount = 0;
+    let totalCategoryDiscount = 0;
+    let totalCouponDiscount = 0;
+
+    const brandSummary = {};
+    const categorySummary = {};
+    const productSummary = {};
+
+    enrichedOrders.forEach(o => {
+      totalRevenue += o.finalPrice;
+      totalProductDiscount += o.productDiscount;
+      totalCategoryDiscount += o.categoryDiscount;
+      totalCouponDiscount += o.couponDiscount;
+
+      brandSummary[o.brand] ??= { count: 0, revenue: 0 };
+      brandSummary[o.brand].count++;
+      brandSummary[o.brand].revenue += o.finalPrice;
+
+      categorySummary[o.category] ??= { count: 0, revenue: 0 };
+      categorySummary[o.category].count++;
+      categorySummary[o.category].revenue += o.finalPrice;
+
+      productSummary[o.productName] ??= { count: 0, revenue: 0 };
+      productSummary[o.productName].count++;
+      productSummary[o.productName].revenue += o.finalPrice;
+    });
+
+    /* ------------------------------
+       6️⃣ WORKBOOK – SALES SHEET
+    -------------------------------*/
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Sales Report");
+
+    sheet.columns = [
+      { header: "Customer", key: "customer", width: 20 },
+      { header: "Product", key: "productName", width: 25 },
+      { header: "Order Date", key: "orderDate", width: 15 },
+      { header: "Delivered Date", key: "deliveredDate", width: 15 },
+      { header: "Brand", key: "brand", width: 15 },
+      { header: "Category", key: "category", width: 15 },
+      { header: "Qty", key: "qty", width: 10 },
+      { header: "Base Price", key: "basePrice", width: 15 },
+      { header: "Product Discount", key: "productDiscount", width: 18 },
+      { header: "Category Discount", key: "categoryDiscount", width: 18 },
+      { header: "Coupon Discount", key: "couponDiscount", width: 18 },
+      { header: "Final Price", key: "finalPrice", width: 15 }
+    ];
+
+    sheet.getRow(1).font = { bold: true };
+    enrichedOrders.forEach(o => sheet.addRow(o));
+
+    /* ------------------------------
+       7️⃣ OVERALL SUMMARY
+    -------------------------------*/
+    sheet.addRow({});
+    sheet.addRow({ customer: "OVERALL SUMMARY" }).font = { bold: true };
+    sheet.addRow({ customer: "Total Revenue", productName: totalRevenue });
+    sheet.addRow({ customer: "Product Discount", productName: totalProductDiscount });
+    sheet.addRow({ customer: "Category Discount", productName: totalCategoryDiscount });
+    sheet.addRow({ customer: "Coupon Discount", productName: totalCouponDiscount });
+    sheet.addRow({
+      customer: "Net Credited Amount",
+      productName: totalRevenue
+    });
+
+    /* ------------------------------
+       8️⃣ BRAND SUMMARY SHEET
+    -------------------------------*/
+    const brandSheet = workbook.addWorksheet("Brand Summary");
+    brandSheet.columns = [
+      { header: "Brand", key: "brand", width: 25 },
+      { header: "Sales Count", key: "count", width: 15 },
+      { header: "Revenue", key: "revenue", width: 20 }
+    ];
+    brandSheet.getRow(1).font = { bold: true };
+
+    Object.entries(brandSummary).forEach(([brand, v]) =>
+      brandSheet.addRow({ brand, count: v.count, revenue: v.revenue })
+    );
+
+    /* ------------------------------
+       9️⃣ CATEGORY SUMMARY SHEET
+    -------------------------------*/
+    const categorySheet = workbook.addWorksheet("Category Summary");
+    categorySheet.columns = [
+      { header: "Category", key: "category", width: 25 },
+      { header: "Sales Count", key: "count", width: 15 },
+      { header: "Revenue", key: "revenue", width: 20 }
+    ];
+    categorySheet.getRow(1).font = { bold: true };
+
+    Object.entries(categorySummary).forEach(([category, v]) =>
+      categorySheet.addRow({ category, count: v.count, revenue: v.revenue })
+    );
+
+    /* ------------------------------
+       🔟 PRODUCT SUMMARY SHEET
+    -------------------------------*/
+    const productSheet = workbook.addWorksheet("Product Summary");
+    productSheet.columns = [
+      { header: "Product", key: "product", width: 30 },
+      { header: "Sales Count", key: "count", width: 15 },
+      { header: "Revenue", key: "revenue", width: 20 }
+    ];
+    productSheet.getRow(1).font = { bold: true };
+
+    Object.entries(productSummary).forEach(([product, v]) =>
+      productSheet.addRow({ product, count: v.count, revenue: v.revenue })
+    );
+
+    /* ------------------------------
+       1️⃣1️⃣ SEND FILE
+    -------------------------------*/
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=sales-report.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (err) {
+    console.error("Excel Export Error:", err);
+    res.status(500).send("Internal Server Error");
+  }
 };
+
+
+
+const generateLedgerPdf= async (req, res) => {
+  try {
+    const { day, date, startDate, endDate } = req.query;
+
+    /* ------------------------------------------------
+       1️⃣ BUILD FILTER (Delivered orders)
+    -------------------------------------------------*/
+    let filter = { status: "Delivered" };
+
+    if (day === "salesToday") {
+      filter.createdOn = {
+        $gte: moment().startOf("day").toDate(),
+        $lte: moment().endOf("day").toDate()
+      };
+    }
+
+    if (day === "salesWeekly") {
+      filter.createdOn = {
+        $gte: moment().startOf("week").toDate(),
+        $lte: moment().endOf("week").toDate()
+      };
+    }
+
+    if (day === "salesMonthly") {
+      filter.createdOn = {
+        $gte: moment().startOf("month").toDate(),
+        $lte: moment().endOf("month").toDate()
+      };
+    }
+
+    if (day === "salesYearly") {
+      filter.createdOn = {
+        $gte: moment().startOf("year").toDate(),
+        $lte: moment().endOf("year").toDate()
+      };
+    }
+
+    if (date) {
+      filter.createdOn = {
+        $gte: moment(date).startOf("day").toDate(),
+        $lte: moment(date).endOf("day").toDate()
+      };
+    }
+
+    if (startDate && endDate) {
+      filter.createdOn = {
+        $gte: moment(startDate).startOf("day").toDate(),
+        $lte: moment(endDate).endOf("day").toDate()
+      };
+    }
+
+    /* ------------------------------------------------
+       2️⃣ FETCH ORDERS
+    -------------------------------------------------*/
+    const orders = await Order.find(filter)
+      .populate("product.productId", "productName brand category")
+      .lean();
+
+    /* ------------------------------------------------
+       3️⃣ ENRICH ORDERS
+    -------------------------------------------------*/
+    const enrichedOrders = orders.length
+      ? await Promise.all(
+          orders.map(async (order) => {
+            const productId =
+              order.product?.[0]?._id ||
+              order.product?.[0]?.productId;
+
+            const product = productId
+              ? await Product.findById(productId)
+                  .select("productName brand category")
+                  .lean()
+              : null;
+
+            return {
+              customer: order.address?.[0]?.name || "Unknown",
+              productName: product?.productName || "Unknown",
+              brand: product?.brand || "Unknown",
+              category: product?.category || "Unknown",
+              payment: order.payment,
+              status: order.status,
+              orderDate: moment(order.createdOn).format("DD-MM-YYYY"),
+              deliveredDate: order.deliveredAt
+                ? moment(order.deliveredAt).format("DD-MM-YYYY")
+                : moment(order.updatedAt).format("DD-MM-YYYY"),
+              totalAmount: order.totalPrice + order.couponDiscount,
+              productDiscount: order.productDiscount || 0,
+              couponDiscount: order.couponDiscount || 0,
+              finalPrice: order.totalPrice
+            };
+          })
+        )
+      : [];
+
+    /* ------------------------------------------------
+       4️⃣ AGGREGATIONS
+    -------------------------------------------------*/
+    let totalRevenue = 0;
+    let totalProductDiscount = 0;
+    let totalCouponDiscount = 0;
+
+    const brandSummary = {};
+    const categorySummary = {};
+    const productSummary = {};
+
+    enrichedOrders.forEach((o) => {
+      totalRevenue += o.finalPrice;
+      totalProductDiscount += o.productDiscount;
+      totalCouponDiscount += o.couponDiscount;
+
+      // Brand
+      brandSummary[o.brand] ??= { count: 0, revenue: 0 };
+      brandSummary[o.brand].count++;
+      brandSummary[o.brand].revenue += o.finalPrice;
+
+      // Category
+      categorySummary[o.category] ??= { count: 0, revenue: 0 };
+      categorySummary[o.category].count++;
+      categorySummary[o.category].revenue += o.finalPrice;
+
+      // Product
+      productSummary[o.productName] ??= { count: 0, revenue: 0 };
+      productSummary[o.productName].count++;
+      productSummary[o.productName].revenue += o.finalPrice;
+    });
+
+    const logoPath = `file://${process.cwd()}/public/user-assets/imgs/theme/ThinkThankz-logo/cover.png`;
+
+    /* ------------------------------------------------
+       5️⃣ HTML TEMPLATE WITH CHARTS
+    -------------------------------------------------*/
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          header { display: flex; justify-content: space-between; align-items: center; }
+          header img { height: 60px; }
+          h1, h2 { margin: 10px 0; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          th, td { border: 1px solid #ddd; padding: 6px; font-size: 12px; text-align: center; }
+          th { background: #f3f4f6; }
+          canvas { display: block; margin: 20px auto; }
+          .summary { padding: 15px; background: #f9fafb; margin-bottom: 30px; }
+        </style>
+      </head>
+      <body>
+        <header>
+          <img src="${logoPath}" onerror="this.style.display='none'" />
+          <h1>Sales Report</h1>
+        </header>
+
+        <div class="summary">
+          <p><strong>Total Revenue:</strong> ₹${totalRevenue.toFixed(2)}</p>
+          <p><strong>Product Discount:</strong> ₹${totalProductDiscount.toFixed(2)}</p>
+          <p><strong>Coupon Discount:</strong> ₹${totalCouponDiscount.toFixed(2)}</p>
+          <p><strong>Net Revenue:</strong> ₹${(totalRevenue - totalProductDiscount - totalCouponDiscount).toFixed(2)}</p>
+          <p><strong>Orders Count:</strong> ${enrichedOrders.length}</p>
+        </div>
+
+        <h2>Brand Wise Summary</h2>
+        <canvas id="brandChart" width="600" height="300"></canvas>
+        <table>
+          <thead>
+            <tr><th>Brand</th><th>Sales Count</th><th>Revenue</th></tr>
+          </thead>
+          <tbody>
+            ${Object.entries(brandSummary).map(([b,v]) => `<tr><td>${b}</td><td>${v.count}</td><td>₹${v.revenue.toFixed(2)}</td></tr>`).join("")}
+          </tbody>
+        </table>
+
+        <h2>Category Wise Summary</h2>
+        <canvas id="categoryChart" width="600" height="300"></canvas>
+        <table>
+          <thead>
+            <tr><th>Category</th><th>Sales Count</th><th>Revenue</th></tr>
+          </thead>
+          <tbody>
+            ${Object.entries(categorySummary).map(([c,v]) => `<tr><td>${c}</td><td>${v.count}</td><td>₹${v.revenue.toFixed(2)}</td></tr>`).join("")}
+          </tbody>
+        </table>
+
+        <h2>Product Wise Summary</h2>
+        <table>
+          <thead>
+            <tr><th>Product</th><th>Sales Count</th><th>Revenue</th></tr>
+          </thead>
+          <tbody>
+            ${Object.entries(productSummary).map(([p,v]) => `<tr><td>${p}</td><td>${v.count}</td><td>₹${v.revenue.toFixed(2)}</td></tr>`).join("")}
+          </tbody>
+        </table>
+
+        <script>
+          new Chart(document.getElementById('brandChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: ${JSON.stringify(Object.keys(brandSummary))},
+              datasets: [{
+                label: 'Revenue (₹)',
+                data: ${JSON.stringify(Object.values(brandSummary).map(v => v.revenue.toFixed(2)))},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)'
+              }]
+            }
+          });
+
+          new Chart(document.getElementById('categoryChart').getContext('2d'), {
+            type: 'pie',
+            data: {
+              labels: ${JSON.stringify(Object.keys(categorySummary))},
+              datasets: [{
+                data: ${JSON.stringify(Object.values(categorySummary).map(v => v.revenue.toFixed(2)))},
+                backgroundColor: ${JSON.stringify(Object.keys(categorySummary).map((_,i) => `hsl(${i*50%360},70%,60%)`))}
+              }]
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `;
+
+    /* ------------------------------------------------
+       6️⃣ Puppeteer PDF
+    -------------------------------------------------*/
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox","--disable-setuid-sandbox"] });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.emulateMediaType("screen");
+
+    const pdf = await page.pdf({ format: "A4", printBackground: true, margin: { top:"20mm", bottom:"20mm" } });
+    await browser.close();
+
+    /* ------------------------------------------------
+       7️⃣ Send PDF
+    -------------------------------------------------*/
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=sales-report.pdf");
+    res.end(pdf);
+
+  } catch (err) {
+    console.error("Sales PDF Error:", err);
+    res.status(500).send("PDF generation failed");
+  }
+};
+
+
 
 
 const adminDashboard = async (req, res) => {
@@ -635,37 +1111,39 @@ const adminDashboard = async (req, res) => {
         const currentYear = new Date().getFullYear();
         let { year = currentYear, month } = req.query;
 
-        // Convert year to a number     
+        // Convert year to number
         year = Number(year);
-
-        // Validate the year
         if (isNaN(year) || year < 2000 || year > currentYear) {
             return res.status(400).send("Invalid year");
         }
 
-        // If month is provided, validate and convert it to a number
-        if (month !== undefined) {
+        // Convert month to number if provided
+        if (month !== undefined && month !== "") {
             month = Number(month);
-            // Validate the month
             if (isNaN(month) || month < 1 || month > 12) {
                 console.log("Invalid month:", month);
                 return res.status(400).send("Invalid month");
             }
         } else {
-            // If month is not provided, set it to the current month
-            const currentDate = new Date();
-            month = currentDate.getMonth() + 1; // Months are zero-indexed, so add 1
-            console.log("Current month:", month);
+            // Month not provided → treat as "all months"
+            month = null;
         }
 
+        // Define date ranges
         const startOfYear = new Date(year, 0, 1);
         const endOfYear = new Date(year + 1, 0, 1);
-        let startOfMonth, endOfMonth;
 
-        if (month !== undefined) {
+        let startOfMonth, endOfMonth;
+        if (month) {
             startOfMonth = new Date(year, month - 1, 1);
-            endOfMonth = new Date(year, month, 0);
+            endOfMonth = new Date(year, month, 0, 23, 59, 59);
         }
+
+        // Aggregation filter
+        const orderFilter = {
+            status: "Delivered",
+            createdOn: month ? { $gte: startOfMonth, $lte: endOfMonth } : { $gte: startOfYear, $lt: endOfYear }
+        };
 
         const [
             categories,
@@ -679,11 +1157,11 @@ const adminDashboard = async (req, res) => {
             bestSellingBrands
         ] = await Promise.all([
             Category.find({ isListed: true }),
-            Order.find({ status: "Delivered", createdOn: { $gte: startOfYear, $lt: endOfYear } }),
+            Order.find(orderFilter),
             Product.find({}),
             User.find({}),
             Order.aggregate([
-                { $match: { status: "Delivered", createdOn: { $gte: startOfYear, $lt: endOfYear } } },
+                { $match: orderFilter },
                 {
                     $group: {
                         _id: { year: { $year: "$createdOn" }, month: { $month: "$createdOn" } },
@@ -695,7 +1173,7 @@ const adminDashboard = async (req, res) => {
             ]),
             Order.find().sort({ createdOn: -1 }).limit(5),
             Order.aggregate([
-                { $match: { status: "Delivered", createdOn: { $gte: startOfYear, $lt: endOfYear } } },
+                { $match: orderFilter },
                 { $unwind: "$product" },
                 {
                     $group: {
@@ -707,7 +1185,7 @@ const adminDashboard = async (req, res) => {
                 { $limit: 10 }
             ]),
             Order.aggregate([
-                { $match: { status: "Delivered", createdOn: { $gte: startOfYear, $lt: endOfYear } } },
+                { $match: orderFilter },
                 { $unwind: "$product" },
                 {
                     $group: {
@@ -719,7 +1197,7 @@ const adminDashboard = async (req, res) => {
                 { $limit: 10 }
             ]),
             Order.aggregate([
-                { $match: { status: "Delivered", createdOn: { $gte: startOfYear, $lt: endOfYear } } },
+                { $match: orderFilter },
                 { $unwind: "$product" },
                 {
                     $group: {
@@ -732,16 +1210,21 @@ const adminDashboard = async (req, res) => {
             ])
         ]);
 
+        // Total revenue
         const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.totalPrice, 0);
 
+        // Products per month
         const productPerMonth = Array(12).fill(0);
         products.forEach(p => {
-            const createdMonth = new Date(p.createdOn).getMonth();
-            productPerMonth[createdMonth]++;
+            const monthIndex = new Date(p.createdOn).getMonth();
+            productPerMonth[monthIndex]++;
         });
 
-        const monthlySalesArray = Array.from({ length: 12 }, (_, index) => {
-            const monthData = monthlySales.find(item => item._id.month === index + 1 && item._id.year === year);
+        // Sales per month (for chart)
+        const monthlySalesArray = Array.from({ length: 12 }, (_, i) => {
+            const monthData = monthlySales.find(
+                item => item._id.year === year && item._id.month === i + 1
+            );
             return monthData ? monthData.count : 0;
         });
 
@@ -750,7 +1233,7 @@ const adminDashboard = async (req, res) => {
             productCount: products.length,
             categoryCount: categories.length,
             totalRevenue,
-            monthlyRevenue: totalRevenue, // Using totalRevenue as placeholder for monthlyRevenue
+            monthlyRevenue: totalRevenue,
             monthlySalesArray,
             productPerMonth,
             latestOrders,
@@ -758,48 +1241,15 @@ const adminDashboard = async (req, res) => {
             bestSellingCategories,
             bestSellingBrands,
             year,
-            month // Pass the month to the template
+            month // null if all months
         });
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         res.status(500).send("Internal Server Error");
     }
 };
 
-
-const dateWiseFilter = async (req, res)=>{
-    try {
-        console.log(req.query);
-        const date = moment(req.query.date).startOf('day').toDate();
-
-        const orders = await Order.aggregate([
-            {
-                $match: {
-                    createdOn: {
-                        $gte: moment(date).startOf('day').toDate(),
-                        $lt: moment(date).endOf('day').toDate(),
-                    },
-                    status: "Delivered"
-                }
-            }
-        ]);
-
-        console.log(orders);
-
-        let itemsPerPage = 5
-        let currentPage = parseInt(req.query.page) || 1
-        let startIndex = (currentPage - 1) * itemsPerPage
-        let endIndex = startIndex + itemsPerPage
-        let totalPages = Math.ceil(orders.length / 3)
-        const currentOrder = orders.slice(startIndex, endIndex)
-
-        res.render("salesReport", { data: currentOrder, totalPages, currentPage, salesMonthly: true , date})
-       
-
-    } catch (error) {
-        console.log(error.message);
-    }
-}
+// Separate: date-wise filter for reports
 
 const returnRequest = async (req, res) => {
     try {
@@ -927,42 +1377,6 @@ const declineReturnRequest = async (req, res) => {
     }
 };
 
-const dateRangeFilter = async (req, res) => {
-    try {
-        const { startDate, endDate } = req.query;
-        if (!startDate || !endDate) {
-            return res.status(400).send("Start date and end date are required");
-        }
-
-        const start = moment(startDate).startOf('day').toDate();
-        const end = moment(endDate).endOf('day').toDate();
-
-        const orders = await Order.aggregate([
-            {
-                $match: {
-                    createdOn: {
-                        $gte: start,
-                        $lt: end,
-                    },
-                    status: "Delivered"
-                }
-            }
-        ]);
-
-        let itemsPerPage = 5;
-        let currentPage = parseInt(req.query.page) || 1;
-        let startIndex = (currentPage - 1) * itemsPerPage;
-        let endIndex = startIndex + itemsPerPage;
-        let totalPages = Math.ceil(orders.length / itemsPerPage);
-        const currentOrder = orders.slice(startIndex, endIndex);
-
-        res.render("salesReport", { data: currentOrder, totalPages, currentPage, startDate, endDate });
-
-    } catch (error) {
-        console.log(error.message);
-        res.status(500).send("Internal Server Error");
-    }
-}
 
 
 module.exports = {

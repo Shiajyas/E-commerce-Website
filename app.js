@@ -10,7 +10,7 @@ const nocache = require("nocache");
 const cors = require('cors');
 const passport = require("./helpers/passport"); // Ensure this is loaded
 const { isLogged, isAdmin, disableCache } = require("./Authentication/auth");
-
+const User = require("./models/userSchema");
 // Connect to the database
 connectDB();
 
@@ -42,6 +42,37 @@ app.set("views", [path.join(__dirname, "views/user"), path.join(__dirname, "view
 app.use(express.static('public'));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/public/uploads/product-images", express.static(path.join(__dirname, "public/uploads/product-images")));
+
+app.use(async (req, res, next) => {
+    if (req.session.user) {
+        const userId = req.session.user;
+
+        const user = await User.findById(userId);
+        const cart = { items: user.cart || [] };
+        const wishlist = { products: user.wishlist || [] };
+
+        res.locals.cartCount = cart ? cart.items.length : 0;
+        res.locals.wishlistCount = wishlist ? wishlist.products.length : 0;
+    } else {
+        res.locals.cartCount = 0;
+        res.locals.wishlistCount = 0;
+    }
+
+    next();
+});
+
+
+app.get("/api/cart-wishlist-count", async (req, res) => {
+    if (!req.session.user) return res.json({ cartCount: 0, wishlistCount: 0 });
+
+    const user = await User.findById(req.session.user).lean();
+    const cartCount = user?.cart?.length || 0;
+    const wishlistCount = user?.wishlist?.length || 0;
+
+    res.json({ cartCount, wishlistCount });
+});
+
+
 
 
 app.get('/auth/google/failure', (req, res) => {

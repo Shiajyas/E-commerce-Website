@@ -1,291 +1,204 @@
 <%- include("../partials/adminHeader") %>
 
-    <!-- Add this in your HTML head section -->
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+</head>
 
-    <head>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+<style>
+    .col-md-3 {
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        margin: 10px;
+    }
+    .form-label { margin-bottom: 8px; }
+    .form-control { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+    .d-grid { margin-top: 20px; }
+    .btn-primary { background-color: #007bff; color: #fff; border: 1px solid #007bff; border-radius: 5px; padding: 10px 20px; cursor: pointer; }
+    .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; }
+    .text-success { color: green; }
+    .text-danger { color: red; }
+</style>
 
-    </head>
+<section class="content-main">
+    <div class="content-header d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="content-title card-title">Category</h2>
+            <p>Add, edit, or delete a category</p>
+        </div>
+        <div>
+            <form action="/admin/category" method="get" class="d-inline">
+                <input type="text" placeholder="Search category" name="search" value="<%= search || '' %>" class="form-control bg-white">
+            </form>
+        </div>
+    </div>
 
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <!-- Category Form -->
+                <div class="col-md-3">
+                    <form id="categoryForm">
+                        <div class="mb-4">
+                            <label for="category_name" class="form-label">Name</label>
+                            <input type="text" name="name" placeholder="Type here" class="form-control" id="category_name" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Description</label>
+                            <textarea placeholder="Type here" name="description" class="form-control" required></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary" type="submit">Create Category</button>
+                        </div>
+                    </form>
+                </div>
 
-    <style>
-        .col-md-3 {
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            margin: 10px;
-        }
+                <!-- Category Table -->
+                <div class="col-md-7 ml-70">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Offer</th>
+                                    <th>Actions</th>
+                                    <th>Status</th>
+                                    <th>List/Unlist</th>
+                                    <th>Edit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% cat.forEach((item, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= item.name %></td>
+                                    <td><%= item.description %></td>
+                                    <td><%= item.categoryOffer ? item.categoryOffer + '%' : '0%' %></td>
+                                    <td>
+                                        <% if (!item.categoryOffer || item.categoryOffer === 0) { %>
+                                            <button class="btn btn-info" onclick="confirmAddOffer('<%= item._id %>')">Add Offer</button>
+                                        <% } else { %>
+                                            <button class="btn btn-warning" onclick="confirmRemoveOffer('<%= item._id %>')">Remove Offer</button>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (item.isListed) { %>
+                                            <span class="badge rounded-pill alert-success">Listed</span>
+                                        <% } else { %>
+                                            <span class="badge rounded-pill alert-danger">Unlisted</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (item.isListed) { %>
+                                            <button class="btn btn-danger" onclick="confirmUnlist('<%= item._id %>')">Unlist</button>
+                                        <% } else { %>
+                                            <button class="btn btn-success" onclick="confirmList('<%= item._id %>')">List</button>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <a href="/admin/editCategory?id=<%= item._id %>" class="btn btn-info">Edit</a>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
 
-        .form-label {
-            margin-bottom: 8px;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-
-        .d-grid {
-            margin-top: 20px;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            color: #fff;
-            border: 1px solid #007bff;
-            border-radius: 5px;
-            padding: 10px 20px;
-            cursor: pointer;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-        }
-    </style>
-
-
-
-    <section class="content-main">
-        <div class="content-header">
-            <div>
-                <h2 class="content-title card-title">Category </h2>
-                <p>Add, edit or delete a category</p>
-            </div>
-            <div>
-                <input type="text" placeholder="Search cat" class="form-control bg-white">
+                        <!-- Pagination -->
+                        <% if (totalPages && totalPages > 1) { %>
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                <% for (let i = 1; i <= totalPages; i++) { %>
+                                    <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                        <a class="page-link" href="?page=<%= i %><%= search ? '&search=' + search : '' %>"><%= i %></a>
+                                    </li>
+                                <% } %>
+                            </ul>
+                        </nav>
+                        <% } %>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <form id="categoryForm">
-                            <div class="mb-4">
-                                <label for="product_name" class="form-label">Name</label>
-                                <input type="text" name="name" placeholder="Type here" class="form-control" id="product_name" required />
-                            </div>
-                        
-                            <div class="mb-4">
-                                <label class="form-label">Description</label>
-                                <textarea placeholder="Type here" name="description" class="form-control" required></textarea>
-                            </div>
-                            <div class="d-grid">
-                                <button class="btn btn-primary" type="submit">Create category</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="col-md-7 ml-70">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center">
-                                        </th>
-                                        <th>Name</th>
-                                        <th>Description</th>
-                                        <th>Offer Price</th>
-                                        <th>Offer</th>
-                                        <th>Status</th>
-                                        <th>List/Unlist</th>
-                                        <th class="text-start">Edit</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% cat.forEach(function(item) { %>
-                                        <tr>
-                                            <td>
-                                                <!-- Content for the first column, if needed -->
-                                            </td>
-                                            <td class="text-start">
-                                                <%= item.name %>
-                                            </td>
-                                            <td class="text-start">
-                                                <%= item.description %>
-                                            </td>
-                                            <td>
-                                                <% if (item.categoryOffer) { %>
-                                                    <%= item.categoryOffer %>%
-                                                <% } else { %>
-                                                    0%
-                                                <% } %>
-                                            </td>
-                                            <td class="text-start">
-                                                <% if (item.categoryOffer === 0) { %>
-                                                    <button class="btn btn-info" onclick="addOffer('<%= item._id %>')" style="width: 100px;">
-                                                        <a href="#" class="text-white">Add Offer</a>
-                                                    </button>
-                                                <% } else { %>
-                                                    <button class="btn btn-info" onclick="removeOffer('<%= item._id %>')" style="width: 100px;">
-                                                        <a href="#" class="text-white">Remove</a>
-                                                    </button>
-                                                <% } %>
-                                            </td>
-                                            <td class="text-start">
-                                                <% if (item.isListed === true) { %>
-                                                    <span class="badge rounded-pill alert-success" style="width: 60px;">Listed</span>
-                                                <% } else { %>
-                                                    <span class="badge rounded-pill alert-danger" style="width: 60px;">Unlisted</span>
-                                                <% } %>
-                                            </td>
-                                            <td class="text-start">
-                                                <% if (item.isListed === true) { %>
-                                                    <button class="btn btn-danger" style="width: 70px;">
-                                                        <a href="/admin/listCategory?id=<%= item._id %>" class="text-white">Unlist</a>
-                                                    </button>
-                                                <% } else { %>
-                                                    <button class="btn btn-success" style="width: 70px;">
-                                                        <a href="/admin/unListCategory?id=<%= item._id %>" class="text-white">List</a>
-                                                    </button>
-                                                <% } %>
-                                            </td>
-                                            <td class="text-start">
-                                                <button class="btn btn-info">
-                                                    <a href="/admin/editCategory?id=<%= item._id %>" class="text-white">Edit</a>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    <% }) %>
-                                </tbody>
-                                
-                            </table>
+    </div>
+</section>
 
-                        </div>
-                    </div> <!-- .col// -->
-                </div> <!-- .row // -->
-            </div> <!-- card body .// -->
-        </div> <!-- card .// -->
-    </section> <!-- content-main end// -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
-    <script>
-
-document.getElementById('categoryForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission
-
-        const form = event.target;
-        const formData = new FormData(form);
-
-        axios.post('/admin/addCategory', {
-            name: formData.get('name'),
-            description: formData.get('description')
+<script>
+    // CREATE CATEGORY
+    document.getElementById('categoryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = { name: form.name.value, description: form.description.value };
+        axios.post('/admin/addCategory', data)
+        .then(res => {
+            Swal.fire('Success', 'Category created successfully', 'success').then(() => window.location.reload());
         })
-        .then(function(response) {
-            // Handle success
-            Swal.fire({
-                title: 'Category Created',
-                text: 'The category has been created successfully.',
-                icon: 'success',
-                confirmButtonText: 'OK'
-            }).then(() => {
-                window.location.href = '/admin/allCategory'; // Redirect after confirmation
-            });
-        })
-        .catch(function(error) {
-            // Handle error
-            if (error.response) {
-                if (error.response.status === 409) {
-                    Swal.fire('Error', 'Category already exists.', 'error');
-                } else {
-                    Swal.fire('Error', 'An error occurred. Please try again later.', 'error');
-                }
-            } else {
-                Swal.fire('Error', 'An error occurred. Please try again later.', 'error');
-            }
+        .catch(err => {
+            if (err.response && err.response.status === 409) Swal.fire('Error', 'Category already exists', 'error');
+            else Swal.fire('Error', 'Something went wrong', 'error');
         });
     });
 
-    function formatCategoryName(name) {
-        name = name.trim();
-        return name.charAt(0).toUpperCase() + name.slice(1);
+    // ADD / REMOVE OFFER
+    async function confirmAddOffer(categoryId) {
+        const { value: percentage } = await Swal.fire({
+            title: 'Add Offer (%)',
+            input: 'number',
+            inputPlaceholder: '%',
+            showCancelButton: true
+        });
+        if (percentage) {
+            $.post('/admin/addCategoryOffer', { categoryId, percentage }, res => {
+                if (res.status) Swal.fire('Success', 'Offer added', 'success').then(() => window.location.reload());
+                else Swal.fire('Error', 'Failed to add offer', 'error');
+            });
+        }
     }
 
-        async function addOffer(categoryId) {
-            // alert("here")
-            const { value: amount } = await Swal.fire({
-                title: 'Offer in percentage',
-                input: 'number',
-                inputLabel: 'Percentage',
-                inputPlaceholder: '%'
-            })
-            $.ajax({
-                url: "/admin/addCategoryOffer",
-                method: "post",
-                data: {
-                    percentage: amount,
-                    categoryId: categoryId
-                },
-                success: (response) => {
-                    console.log(response);
-                    if (response.status === true) {
-                        location.reload()
-                        // Swal.fire('Offer added', 'The offer has been removed.', 'success');
-
-                    } else {
-                        alert("failed")
-                    }
-                }
-            })
-        }
-
-        function removeOffer(categoryId) {
-            // alert(categoryId)
-            try {
-                Swal.fire({
-                    title: 'Remove Offer',
-                    text: 'Are you sure you want to remove this offer?',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Yes, remove it!',
-                    timer: 5000,  // 5 seconds
-                    timerProgressBar: true
-                }).then(async (result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: "/admin/removeCategoryOffer",
-                            method: "post",
-                            data: {
-                                categoryId: categoryId
-                            },
-                            success: (response) => {
-                            console.log(response);
-                            if (response.status === true) {
-                                // Swal.fire('Removed!', 'The offer has been removed.', 'success');
-                                location.reload()
-                            } else if (response.status === false) {
-                                Swal.fire('failed');
-                            } else {
-                                alert("failed")
-                            }
-                        }
-                        });
-
-                        
-                    }
+    function confirmRemoveOffer(categoryId) {
+        Swal.fire({
+            title: 'Remove Offer?',
+            text: 'Are you sure you want to remove this offer?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, remove'
+        }).then(result => {
+            if (result.isConfirmed) {
+                $.post('/admin/removeCategoryOffer', { categoryId }, res => {
+                    if (res.status) Swal.fire('Removed', 'Offer removed', 'success').then(() => window.location.reload());
+                    else Swal.fire('Error', 'Failed to remove offer', 'error');
                 });
-            } catch (error) {
-                console.error(error);
             }
-        }
+        });
+    }
 
+    // LIST / UNLIST CATEGORY
+    function confirmList(categoryId) {
+        Swal.fire({
+            title: 'List Category?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, list'
+        }).then(result => {
+            if (result.isConfirmed) window.location.href = `/admin/unListCategory?id=${categoryId}`;
+        });
+    }
 
+    function confirmUnlist(categoryId) {
+        Swal.fire({
+            title: 'Unlist Category?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, unlist'
+        }).then(result => {
+            if (result.isConfirmed) window.location.href = `/admin/listCategory?id=${categoryId}`;
+        });
+    }
+</script>
 
-
-
-    </script>
-
-    <!-- Add these in your HTML head section -->
-
-
-
-    <%- include("../partials/adminFooter") %>
+<%- include("../partials/adminFooter") %>

@@ -67,6 +67,9 @@ const productSchema = Mongoose.Schema({
     }
 })
 
+productSchema.index({ createdOn: 1 });
+
+
 const Product = Mongoose.model("Product", productSchema)
 
 module.exports = Product

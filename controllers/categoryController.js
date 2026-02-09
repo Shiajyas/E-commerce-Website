@@ -4,12 +4,22 @@ const Product = require("../models/productSchema")
 
 // Rendering the category page
 const getCategoryInfo = async (req, res) => {
-    try {
-        const categoryData = await Category.find({})
-        res.render("category", { cat: categoryData })
-    } catch (error) {
-        console.log(error.message);
-    }
+  const search = req.query.search || '';
+    const page = parseInt(req.query.page) || 1;
+
+    const cat = await Category.find({ name: { $regex: search, $options: 'i' } })
+                              .skip((page - 1) * 10)
+                              .limit(10); // adjust limit as needed
+
+    const totalCount = await Category.countDocuments({ name: { $regex: search, $options: 'i' } });
+    const totalPages = Math.ceil(totalCount / 10);
+
+    res.render('category', {
+        cat,
+        search,       // <--- pass it here
+        currentPage: page,
+        totalPages
+    });
 }
 
 const addCategory = async (req, res) => {

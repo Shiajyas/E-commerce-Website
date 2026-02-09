@@ -1,121 +1,120 @@
 <%- include("../partials/adminHeader") %>
 
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+</head>
 
-
-    <div class="content-header row">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="content-title card-title">Banners</h2>
-
-        </div>
-    </div>
-
-    </div>
-
-    <!-- <header class="card-header text-center mb-20">
-        <form action="/admin/users/" method="get" class="d-inline">
-            <div class="input-group input-group-sm border border-1 border-grey rounded-pill"
-                style="width: 500px; margin-left: 230px;">
-                <input type="text" class="form-control border-0 rounded-pill" placeholder="Search customers..."
-                    name="search">
-                <button class="btn  border-0" type="submit">Search</button>
-            </div>
+<div class="content-header row">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="content-title card-title">Banners</h2>
+        <form action="/admin/banner" method="get" class="d-inline">
+            <input type="text" name="search" placeholder="Search banners" class="form-control" value="<%= typeof search !== 'undefined' ? search : '' %>">
         </form>
-    </header> -->
+    </div>
+</div>
 
-
-    <!-- card-header end// -->
-
-
-    <div class="right mt-5">
-        <table class="table table-striped">
-            <thead>
+<div class="right mt-5">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Image</th>
+                <th scope="col">Title</th>
+                <th scope="col">Description</th>
+                <th scope="col">Active</th>
+                <th scope="col">Edit</th>
+                <th scope="col">Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (data && data.length > 0) { %>
+                <% data.forEach(banner => { %>
+                    <tr>
+                        <td>
+                            <img src="/uploads/product-images/<%= banner.image %>" style="height: 2rem; width: 3rem;" class="img-xs" alt="Item">
+                        </td>
+                        <td><%= banner.title %></td>
+                        <td><%= banner.description %></td>
+                        <td>
+                            <% if (new Date(banner.startDate) <= Date.now() && new Date(banner.endDate) >= Date.now()) { %>
+                                <span class="badge rounded-pill alert-success">Active</span>
+                            <% } else { %>
+                                <span class="badge rounded-pill alert-danger">Inactive</span>
+                            <% } %>
+                        </td>
+                        <td>
+                            <a href="/admin/editBanner?id=<%= banner._id %>">
+                                <button class="btn">
+                                    <i class="icon material-icons md-edit"></i>
+                                </button>
+                            </a>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" onclick="confirmDelete('<%= banner._id %>')">
+                                <i class="icon material-icons md-delete"></i>
+                            </button>
+                        </td>
+                    </tr>
+                <% }) %>
+            <% } else { %>
                 <tr>
-                    <th scope="col">Image</th>
-                    <th scope="col">Title</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Active</th>
-                    <th scope="col">Edit</th>
-                    <th scope="col">Delete</th>
+                    <td colspan="6" class="text-center">No banners found</td>
                 </tr>
-            </thead>
-            <tbody>
-                <% if (locals.data) { %>
-                    <% for(let i=0; i < data.length; i++) { %>
-                        <tr>
-                            <td>
-                                <img src="/uploads/product-images/<%= data[i].image %>" style="height: 2rem; width: 3rem;" class="img-xs" alt="Item">
+            <% } %>
+        </tbody>
+    </table>
+</div>
 
-                            </td>
-                            <td>
-                                <%= data[i].title %>
-                            </td>
-                            <td>
-                                <%= data[i].description %>
-                            </td>
+<div class="container mt-3 text-center">
+    <a href="/admin/addBanner">
+        <button class="btn btn-primary mt-3">Add Banner</button>
+    </a>
+</div>
 
+<!-- Pagination -->
+<% if (totalPages && totalPages > 1) { %>
+<div class="container mt-3">
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            <% if (currentPage > 1) { %>
+                <li class="page-item">
+                    <a class="page-link" href="?page=<%= currentPage - 1 %><%= search ? '&search=' + search : '' %>">Previous</a>
+                </li>
+            <% } %>
+            <% for (let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                    <a class="page-link" href="?page=<%= i %><%= search ? '&search=' + search : '' %>"><%= i %></a>
+                </li>
+            <% } %>
+            <% if (currentPage < totalPages) { %>
+                <li class="page-item">
+                    <a class="page-link" href="?page=<%= currentPage + 1 %><%= search ? '&search=' + search : '' %>">Next</a>
+                </li>
+            <% } %>
+        </ul>
+    </nav>
+</div>
+<% } %>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
 
+<script>
+function confirmDelete(bannerId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This banner will be deleted permanently!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/admin/deleteBanner?id=${bannerId}`;
+        }
+    });
+}
+</script>
 
-                            <td>
-                                <% if (data[i].startDate < Date.now() &&  data[i].endDate > Date.now()) { %>
-                                    <p class="badge rounded-pill alert-success">Active</p>
-                                <% } else { %>
-                                    <p class="badge rounded-pill alert-danger">No Active</p>
-                                <% } %>
-                            </td>
-                            
-                            
-                            
-
-                            <td>
-                                <a href="/admin/editBanner?id=<%= data[i]._id %>">
-                                    <button class="btn">
-                                        <i class="icon material-icons md-edit"></i> 
-                                    </button>
-                                </a>
-                                
-                            </td>
-
-                            <td class="action" data-title="Remove"><a href="/admin/deleteBanner?id=<%= data[i]._id %>"><i class="icon material-icons md-delete"></i> </a></td>
-
-                        </tr>
-                        <% } %>
-                            <% }else{ %>
-
-                                No Banner Found
-
-                                <% } %>
-            </tbody>
-
-        </table>
-
-
-
-
-        <!-- card-body end// -->
-    </div> <!-- card end// -->
-
-    <div class="container mt-3">
-        <div class="row justify-content-center">
-            <div class="col-md-6 text-center">
-                <a href="/admin/addBanner">
-                    <button class="btn btn-primary mt-3 mr-200" type="submit">Add Banner</button>
-                </a>
-            </div>
-        </div>
-    </div>
-    </div>
-    <div class="container mt-3">
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center mb-20" style="margin-right: 200px;">
-
-
-
-            </ul>
-        </nav>
-    </div>
-
-
-
-
-    <%- include("../partials/adminFooter") %>
+<%- include("../partials/adminFooter") %>

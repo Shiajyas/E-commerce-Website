@@ -1,151 +1,220 @@
 <%- include("../partials/adminHeader") %>
 
 <style>
-    .pagination {
-      display: flex;
-      justify-content: center;
-    }
-    
-    .btn {
-      /* Add your button styling here */
-      margin: 0 5px;
-      padding: 5px 10px;
-      background-color: #f0f0f0;
-      border: 1px solid #ccc;
-      text-decoration: none;
-      color: #333;
-    }
-    
-    .active {
-      /* Add styles for the active page */
-     
-      color: #fff;
-    }
-    
-    .btn:hover {
-      /* Add styles for button hover state */
-      background-color: #ddd;
-    }
-    
-    
-    </style>
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+.pagination .btn {
+    margin: 0 5px;
+}
+.pagination .active {
+    background-color: #0d6efd;
+    color: #fff;
+}
+</style>
 
 <section class="content-main">
-    <div class="content-header d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="content-title card-title">Order List</h2>
-            <!-- <p>Lorem ipsum dolor sit amet.</p> -->
+  <h2 class="content-title card-title mt-3">Order List</h2>
+    <!-- HEADER -->
+  <div class="content-header d-flex justify-content-between align-items-center flex-wrap">
+
+    <!-- DATE FILTER + STATUS + SEARCH -->
+    <form id="filterForm" class="row g-2 align-items-end mt-2 w-100">
+
+        <!-- FROM DATE -->
+        <div class="col-md-3">
+            <label class="form-label">From Date</label>
+            <input type="date" class="form-control" id="fromDate" name="fromDate" value="<%= fromDate || '' %>">
         </div>
-        <div class="d-flex">
-            <select id="statusFilter" class="form-select mr-2">
-                <option value="all" <% if (selectedStatus === 'all') { %>selected<% } %>>All</option>
-                <option value="Pending" <% if (selectedStatus === 'Pending') { %>selected<% } %>>Pending</option>
-                <option value="Confirmed" <% if (selectedStatus === 'Confirmed') { %>selected<% } %>>Confirmed</option>
-                <option value="Shipped" <% if (selectedStatus === 'Shipped') { %>selected<% } %>>Shipped</option>
-                <option value="Delivered" <% if (selectedStatus === 'Delivered') { %>selected<% } %>>Delivered</option>
-                <option value="Canceled" <% if (selectedStatus === 'Canceled') { %>selected<% } %>>Canceled</option>
-                <option value="Returned" <% if (selectedStatus === 'Returned') { %>selected<% } %>>Returned</option>
+
+        <!-- TO DATE -->
+        <div class="col-md-3">
+            <label class="form-label">To Date</label>
+            <input type="date" class="form-control" id="toDate" name="toDate" value="<%= toDate || '' %>">
+        </div>
+
+        <!-- STATUS -->
+        <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select id="statusFilter" class="form-select">
+                <% ["all","Pending","Confirmed","Shipped","Delivered","Canceled","Returned"].forEach(s => { %>
+                    <option value="<%= s %>" <%= selectedStatus === s ? "selected" : "" %>><%= s %></option>
+                <% }) %>
             </select>
-            <input type="text" id="nameSearch" class="form-control" placeholder="Search by name" value="<%= searchName %>">
-            <button id="searchButton" class="btn btn-primary ml-2">Search</button>
         </div>
-    </div>
-   
-    <div class="card-body">
+
+        <!-- SEARCH -->
+        <div class="col-md-3">
+            <label class="form-label">&nbsp;</label> <!-- Empty label for alignment -->
+            <div class="input-group">
+                <input type="text" id="nameSearch" class="form-control" placeholder="Search by name" value="<%= searchName %>">
+                <button type="submit" id="searchBtn" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+
+    </form>
+
+  
+
+</div>
+
+
+    <!-- TABLE -->
+    <div class="card-body mt-4">
         <div class="table-responsive">
-            <table class="table table-hover" id="orderTable">
+            <table class="table table-hover" id="ordersTable">
                 <thead>
                     <tr>
-                        <th>#ID</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">Phone</th>
-                        <th scope="col">Total</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Date</th>
-                        <th scope="col" class="text-end">Action</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th class="text-end">Action</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <% if (orders.length > 0) { %>
-                        <% for (let i = 0; i < orders.length; i++) { %>
-                            <tr class="order-row" data-status="<%= orders[i].status %>" data-created-on="<%= orders[i].createdOn %>">
-                                <td><%= orders[i]._id %></td>
-                                <td><b><%= orders[i].address[0].name %></b></td>
-                                <td><%= orders[i].address[0].phone %></td>
-                                <td><%= orders[i].totalPrice.toLocaleString() %></td>
+                <tbody id="ordersBody">
+                    <% if (orders.length) { %>
+                        <% orders.forEach(order => { %>
+                            <tr>
+                                <td><b><%= order.address[0].name %></b></td>
+                                <td><%= order.address[0].phone %></td>
+                                <td>₹<%= order.totalPrice.toLocaleString() %></td>
                                 <td>
-                                    <% if (orders[i].status == "Canceled") { %>
-                                        <span class="badge rounded-pill alert-danger"><%= orders[i].status %></span>
-                                    <% } else if (orders[i].status == "Confirmed") { %>
-                                        <span class="badge rounded-pill alert-warning"><%= orders[i].status %></span>
-                                    <% } else if (orders[i].status == "Pending") { %>
-                                        <span class="badge rounded-pill alert-info"><%= orders[i].status %></span>
-                                    <% } else if (orders[i].status == "Shipped") { %>
-                                        <span class="badge rounded-pill alert-primary"><%= orders[i].status %></span>
-                                    <% } else if (orders[i].status == "Delivered") { %>
-                                        <span class="badge rounded-pill alert-success"><%= orders[i].status %></span>
-                                    <% } else if (orders[i].status == "Returned") { %>
-                                        <span class="badge rounded-pill alert-secondary"><%= orders[i].status %></span>
-                                    <% } %> 
+                                    <span class="badge rounded-pill
+                                        <%= order.status === "Delivered" ? "alert-success" :
+                                            order.status === "Canceled" ? "alert-danger" :
+                                            order.status === "Returned" ? "alert-secondary" :
+                                            order.status === "Shipped" ? "alert-primary" :
+                                            order.status === "Confirmed" ? "alert-warning" :
+                                            "alert-info" %>">
+                                        <%= order.status %>
+                                    </span>
                                 </td>
                                 <td>
-                                    <% const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' }; %>
-                                    <%= new Date(orders[i].createdOn).toLocaleDateString('en-US', dateOptions) %>
+                                    <%= new Date(order.createdOn).toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" }) %>
                                 </td>
                                 <td class="text-end">
-                                    <a href="/admin/orderDetailsAdmin?id=<%= orders[i]._id %>" class="btn btn-md rounded font-sm">Detail</a>
+                                    <a href="/admin/orderDetailsAdmin?id=<%= order._id %>" class="btn btn-sm btn-outline-primary">Detail</a>
                                 </td>
                             </tr>
-                        <% } %>
+                        <% }) %>
                     <% } else { %>
                         <tr>
-                            <td colspan="7" class="text-center">No orders found</td>
+                            <td colspan="6" class="text-center">No orders found</td>
                         </tr>
                     <% } %>
                 </tbody>
             </table>
 
-            <div class="pagination">
-                <% if (currentPage > 1) { %>
-                    <button class="btn btn-sm">
-                        <a href="/admin/orderList?page=<%= currentPage - 1 %>&status=<%= selectedStatus %>&name=<%= searchName %>">Previous</a>
-                    </button>
-                <% } %>
-                
-                <% for (let i = 1; i <= totalPages; i++) { %>
-                    <button class="btn btn-sm <%= i === currentPage ? 'active' : '' %>">
-                        <a href="/admin/orderList?page=<%= i %>&status=<%= selectedStatus %>&name=<%= searchName %>"><%= i %></a>
-                    </button>
-                <% } %>
-                
-                <% if (currentPage < totalPages) { %>
-                    <button class="btn btn-sm">
-                        <a href="/admin/orderList?page=<%= currentPage + 1 %>&status=<%= selectedStatus %>&name=<%= searchName %>">Next</a>
-                    </button>
+            <div class="pagination" id="pagination">
+                <% if (totalPages > 1) { %>
+                    <% for(let i=1;i<=totalPages;i++){ %>
+                        <button class="btn btn-sm <%= i === currentPage ? 'active' : '' %>" data-page="<%= i %>"><%= i %></button>
+                    <% } %>
                 <% } %>
             </div>
-        </div> <!-- table-responsive //end -->
-    </div> <!-- card-body end// -->
+
+        </div>
+    </div>
+
 </section>
 
-<!-- Bootstrap JS and dependencies -->
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<!-- SWEETALERT -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-document.getElementById('statusFilter').addEventListener('change', function() {
-    var selectedStatus = this.value;
-    var searchName = document.getElementById('nameSearch').value;
-    window.location.href = '/admin/orderList?page=1&status=' + selectedStatus + '&name=' + searchName;
+const ordersBody = document.getElementById("ordersBody");
+const paginationDiv = document.getElementById("pagination");
+const filterForm = document.getElementById("filterForm");
+
+async function fetchOrders(page=1){
+    const fromDateInput = document.getElementById("fromDate");
+    const toDateInput = document.getElementById("toDate");
+    const status = document.getElementById("statusFilter").value;
+    const name = document.getElementById("nameSearch").value;
+
+    const fromDate = fromDateInput.value;
+    const toDate = toDateInput.value;
+
+    const today = new Date();
+    today.setHours(23,59,59,999);
+
+    // Date validation
+    if(fromDate && new Date(fromDate) > today){
+        Swal.fire("Invalid Date","From Date cannot be in the future","warning");
+        return;
+    }
+
+    if(toDate && new Date(toDate) > today){
+        Swal.fire("Invalid Date","To Date cannot be in the future","warning");
+        return;
+    }
+
+    if(fromDate && toDate && new Date(fromDate) > new Date(toDate)){
+        Swal.fire("Invalid Date Range","From Date cannot be after To Date","error");
+        return;
+    }
+
+    const params = new URLSearchParams({ page, status, name, fromDate, toDate });
+
+    try {
+        const res = await fetch(`/admin/orderListData?${params.toString()}`);
+        const data = await res.json();
+
+        // Clear table body
+        ordersBody.innerHTML = "";
+
+        if(data.orders.length){
+            data.orders.forEach(order=>{
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><b>${order.address[0].name}</b></td>
+                    <td>${order.address[0].phone}</td>
+                    <td>₹${parseInt(order.totalPrice).toLocaleString()}</td>
+                    <td><span class="badge rounded-pill ${
+                        order.status === "Delivered" ? "alert-success" :
+                        order.status === "Canceled" ? "alert-danger" :
+                        order.status === "Returned" ? "alert-secondary" :
+                        order.status === "Shipped" ? "alert-primary" :
+                        order.status === "Confirmed" ? "alert-warning" : "alert-info"
+                    }">${order.status}</span></td>
+                    <td>${new Date(order.createdOn).toLocaleDateString("en-IN",{day:"2-digit", month:"short", year:"numeric"})}</td>
+                    <td class="text-end"><a href="/admin/orderDetailsAdmin?id=${order._id}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                `;
+                ordersBody.appendChild(tr);
+            });
+        } else {
+            ordersBody.innerHTML = `<tr><td colspan="6" class="text-center">No orders found</td></tr>`;
+        }
+
+        // Pagination buttons
+        paginationDiv.innerHTML = "";
+        for(let i=1;i<=data.totalPages;i++){
+            const btn = document.createElement("button");
+            btn.className = `btn btn-sm ${i===data.currentPage?'active':''}`;
+            btn.textContent = i;
+            btn.dataset.page = i;
+            btn.onclick = ()=>fetchOrders(i);
+            paginationDiv.appendChild(btn);
+        }
+
+    } catch(err){
+        console.error(err);
+        Swal.fire("Error","Could not fetch orders","error");
+    }
+}
+
+// Form submit
+filterForm.addEventListener("submit", (e)=>{
+    e.preventDefault();
+    fetchOrders();
 });
 
-document.getElementById('searchButton').addEventListener('click', function() {
-    var selectedStatus = document.getElementById('statusFilter').value;
-    var searchName = document.getElementById('nameSearch').value;
-    window.location.href = '/admin/orderList?page=1&status=' + selectedStatus + '&name=' + searchName;
-});
+// Initial load
+fetchOrders(<%= currentPage %>);
 </script>
-
 
 <%- include("../partials/adminFooter") %>

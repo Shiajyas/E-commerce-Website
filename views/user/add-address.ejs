@@ -1,5 +1,5 @@
 <%- include("../partials/header") %>
-<div class="container mt-4">
+<div class="container mt-90">
     <h3 class="mt-3" style="color: #046963; margin-bottom: 70px;">Create User Address</h3>
     <form id="addressForm" method="POST" action="/addAddress" class="border-0 p-3">
         <div class="row mb-4">
@@ -49,58 +49,106 @@
 </div>
 
 <script>
-    document.getElementById('addressForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        if (validateForm()) {
-            const formData = new FormData(this);
-            const formObject = {};
-            formData.forEach((value, key) => formObject[key] = value);
+document.getElementById('addressForm').addEventListener('submit', function(event) {
+    event.preventDefault();
 
-            fetch('/addAddress', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formObject),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: data.message,
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        window.location.href = '/profile'; // Redirect after confirmation
-                    });
-                } else {
-                    Swal.fire('Error', data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire('Error', 'Failed to add the address. Please try again later.', 'error');
-            });
-        }
-    });
+    if (validateForm()) {
+        const formData = new FormData(this);
+        const formObject = {};
+        formData.forEach((value, key) => formObject[key] = value.trim());
 
-    function validateForm() {
-        let isValid = true;
-        const requiredFields = ["addressType", "name", "city", "landMark", "state", "pincode", "email", "phone", "altPhone"];
-        requiredFields.forEach(function (field) {
-            const input = document.getElementById(field);
-            if (input.value.trim() === "") {
+        fetch('/addAddress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formObject)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
                 Swal.fire({
-                    title: 'Error',
-                    text: 'Please fill all the fields.',
-                    icon: 'error'
+                    title: 'Success',
+                    text: data.message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    window.location.href = '/profile';
                 });
-                isValid = false;
+            } else {
+                Swal.fire('Error', data.message, 'error');
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'Failed to add the address. Please try again later.', 'error');
         });
-        return isValid;
     }
+});
+
+function validateForm() {
+    const fields = {
+        addressType: "Address Type",
+        name: "Name",
+        city: "City",
+        landMark: "Landmark",
+        state: "State",
+        pincode: "Pincode",
+        email: "Email",
+        phone: "Phone",
+        altPhone: "Alternate Phone"
+    };
+
+    for (let id in fields) {
+        const input = document.getElementById(id);
+        if (!input.value.trim()) {
+            Swal.fire('Error', `Please fill the ${fields[id]}.`, 'error');
+            input.focus();
+            return false;
+        }
+    }
+
+    // Validate email
+    const email = document.getElementById("email").value.trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+        Swal.fire('Error', 'Please enter a valid email address.', 'error');
+        document.getElementById("email").focus();
+        return false;
+    }
+
+    // Validate phone numbers
+    const phone = document.getElementById("phone").value.trim();
+    const altPhone = document.getElementById("altPhone").value.trim();
+
+    const phonePattern = /^[0-9]{10}$/;
+    if (!phonePattern.test(phone)) {
+        Swal.fire('Error', 'Phone number must be 10 digits.', 'error');
+        document.getElementById("phone").focus();
+        return false;
+    }
+
+    if (!phonePattern.test(altPhone)) {
+        Swal.fire('Error', 'Alternate phone number must be 10 digits.', 'error');
+        document.getElementById("altPhone").focus();
+        return false;
+    }
+
+    if (phone === altPhone) {
+        Swal.fire('Error', 'Phone and alternate phone cannot be the same.', 'error');
+        document.getElementById("altPhone").focus();
+        return false;
+    }
+
+    // Validate pincode
+    const pincode = document.getElementById("pincode").value.trim();
+    const pinPattern = /^[0-9]{6}$/; // assuming Indian 6-digit pincode
+    if (!pinPattern.test(pincode)) {
+        Swal.fire('Error', 'Please enter a valid 6-digit pincode.', 'error');
+        document.getElementById("pincode").focus();
+        return false;
+    }
+
+    return true;
+}
 </script>
 
 <%- include("../partials/footer") %>

@@ -16,82 +16,121 @@ let instance = new razorpay({
 })
 
 
+
 const getCheckoutPage = async (req, res) => {
     try {
-        // console.log("queryyyyyyyy", req.query);
-        if (req.query.isSingle == "true") {
-            const id = req.query.id
-            const findProduct = await Product.find({ id: id }).lean()
-            const userId = req.session.user
-            const findUser = await User.findOne({ _id: userId })
-            const addressData = await Address.findOne({ userId: userId })
-            // console.log(addressData)
-            console.log("THis is find product =>", findProduct);
 
-            const today = new Date().toISOString(); // Get today's date in ISO format
+        console.log("➡️ Checkout query:", req.query);
 
-            const findCoupons = await Coupon.find({
-                isList: true,
-                createdOn: { $lt: new Date(today) },
-                expireOn: { $gt: new Date(today) },
-                minimumPrice: { $lt: findProduct[0].salePrice },
-            });
-
-
-            console.log(findCoupons, 'this is coupon ');
-
-            res.render("checkout", { product: findProduct, user: userId, findUser: findUser, userAddress: addressData, isSingle: true, coupons: findCoupons })
-        } else {
-            const user = req.query.userId
-            const findUser = await User.findOne({ _id: user })
-            // console.log(findUser);
-            // const productIds = findUser.cart.map(item => item.productId)
-            // console.log(productIds)
-            // const findProducts = await Product.find({ _id: { $in: productIds } })
-            // console.log(findProducts);
-            const addressData = await Address.findOne({ userId: user })
-            // console.log("THis is find product =>",findProducts);
-            const oid = new mongodb.ObjectId(user);
-            const data = await User.aggregate([
-                { $match: { _id: oid } },
-                { $unwind: "$cart" },
-                {
-                    $project: {
-                        proId: { '$toObjectId': '$cart.productId' },
-                        quantity: "$cart.quantity"
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'products',
-                        localField: 'proId',
-                        foreignField: '_id',
-                        as: 'productDetails'
-                    }
-                },
-            ])
-
-            // console.log("Data  =>>", data)
-            // console.log("Data  =>>" , data[0].productDetails[0])
-           
-            const grandTotal = req.session.grandTotal
-            // console.log(grandTotal);
-            const today = new Date().toISOString(); // Get today's date in ISO format
- 
-            const findCoupons = await Coupon.find({
-                isList: true,
-                createdOn: { $lt: new Date(today) },
-                expireOn: { $gt: new Date(today) },
-                minimumPrice: { $lt: grandTotal },
-            });
-
-            res.render("checkout", { data: data, user: findUser, isCart: true, userAddress: addressData, isSingle: false, grandTotal, coupons: findCoupons })
+        const userId = req.session.user;
+        if (!userId) {
+            console.log("❌ No user session found");
+            return res.redirect("/login");
         }
 
+        /* ======================================================
+           SINGLE PRODUCT CHECKOUT
+        ====================================================== */
+        if (req.query.isSingle === "true") {
+
+            const productId = req.query.id;
+            console.log("🟢 Single product checkout:", productId);
+
+            const findProduct = await Product.findById(productId).lean();
+            if (!findProduct) {
+                console.log("❌ Product not found");
+                return res.redirect("/shop");
+            }
+
+            const findUser = await User.findById(userId).lean();
+            const addressData = await Address.findOne({ userId }).lean();
+
+            const today = new Date();
+
+            const coupons = await Coupon.find({
+                isList: true,
+                createdOn: { $lte: new Date(today.setHours(0, 0, 0, 0)) },
+                expireOn: { $gte: today },
+                minimumPrice: { $lte: findProduct.salePrice }
+            }).lean();
+
+            console.log("🎟️ Coupons:", coupons);
+
+            return res.render("checkout", {
+                product: [findProduct],   // always array
+                user: findUser,
+                userAddress: addressData,
+                isSingle: true,
+                coupons
+            });
+        }
+
+        /* ======================================================
+           CART CHECKOUT
+        ====================================================== */
+
+        console.log("🛒 Cart checkout");
+
+        const findUser = await User.findById(userId).lean();
+        const addressData = await Address.findOne({ userId }).lean();
+
+        const oid = new mongodb.ObjectId(userId);
+
+        const data = await User.aggregate([
+            { $match: { _id: oid } },
+            { $unwind: "$cart" },
+            {
+                $project: {
+                    proId: { $toObjectId: "$cart.productId" },
+                    quantity: "$cart.quantity"
+                }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "proId",
+                    foreignField: "_id",
+                    as: "productDetails"
+                }
+            }
+        ]);
+
+        console.log("🛒 Cart data:", data);
+
+        // Calculate grand total if not in session
+        const grandTotal = req.session.grandTotal ??
+            data.reduce((sum, item) => {
+                return sum + (item.productDetails[0].salePrice * item.quantity);
+            }, 0);
+
+        console.log("💰 Grand total:", grandTotal);
+
+        const today = new Date();
+
+        const coupons = await Coupon.find({
+            isList: true,
+            createdOn: { $lte: new Date(today.setHours(0, 0, 0, 0)) },
+            expireOn: { $gte: today },
+            minimumPrice: { $lte: grandTotal }
+        }).lean();
+
+        console.log("🎟️ Coupons:", coupons);
+
+        return res.render("checkout", {
+            data,
+            user: findUser,
+            userAddress: addressData,
+            isSingle: false,
+            grandTotal,
+            coupons
+        });
+
     } catch (error) {
-        console.log(error.message);
+        console.error("🔥 Checkout crashed");
+        console.error(error);
+        res.redirect("/500");
     }
-}
+};
 
 
 const orderPlaced = async (req, res) => {
@@ -122,6 +161,11 @@ const orderPlaced = async (req, res) => {
                 if (!findProduct) {
                     return res.status(404).json({ error: "Product not found" });
                 }
+
+                if(payment === 'cod' && totalPrice >= 4000){
+                    return res.status(400).json({ error: "COD not allowed for orders over 4000. Please select another payment method.",method:"cod" });
+                }
+
                 const productDetails = {
                     _id: findProduct._id,
                     price: findProduct.salePrice,
@@ -192,8 +236,11 @@ const orderPlaced = async (req, res) => {
         await order.save();
 
         if (payment === 'cod') {
-            if (order.totalPrice >= 1000) {
-                return res.status(400).json({ error: "COD not allowed for orders over 1000. Please select another payment method." });
+            if (order.totalPrice >= 4000) {
+
+                console.log("❌ COD not allowed for orders over 4000");
+               
+                return res.status(200).json({ error: "COD not allowed for orders over 4000. Please select another payment method.",method:"cod" });
             }
             order.status = "Confirmed";
             await order.save();
@@ -228,6 +275,96 @@ const orderPlaced = async (req, res) => {
     }
 };
 
+const savePendingOrder = async (req, res) => {
+    try {
+        const { order_id, user_id, product_id, total_price, address_id, payment_id, failure_reason, failure_details } = req.body;
+
+        const user = await User.findById(user_id);
+        if (!user) return res.status(404).json({ status: 'User not found' });
+
+        const address = await Address.findOne({ userId: user_id });
+        if (!address) return res.status(404).json({ status: 'Address not found' });
+
+        const findAddress = address.address.find(item => item._id.toString() === address_id);
+        if (!findAddress) return res.status(404).json({ status: 'Address not found' });
+
+        const products = await Product.find({ _id: { $in: product_id } });
+        const cartItemQuantities = user.cart.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity
+        }));
+
+        const productDetails = products.map(item => ({
+            _id: item._id,
+            price: item.salePrice,
+            regularPrice: item.regularPrice,
+            name: item.productName,
+            productOffer: item.regularPrice - item.salePrice,
+            image: item.productImage[0],
+            quantity: cartItemQuantities.find(cartItem => cartItem.productId.toString() === item._id.toString())?.quantity || 1
+        }));
+
+        const pendingOrder = new Order({
+            product: productDetails,
+            totalPrice: total_price,
+            address: findAddress,
+            userId: user_id,
+            couponDiscount: req.session.coupon || 0,
+            payment: req.session.payment || 'online',
+            razorpayOrderId: order_id,
+            status: 'Failed', // mark it as failed
+            failure: {
+                reason: failure_reason || 'Payment failed',
+                details: failure_details || {},
+                date: Date.now()
+            }
+        });
+
+      console.log("Pending order created:", pendingOrder);
+        
+
+        await pendingOrder.save();
+        res.status(200).json({ status: 'Pending order saved', order: pendingOrder });
+
+    } catch (error) {
+        console.error('Error saving pending order:', error);
+        res.status(500).json({ status: 'error', error: error.message });
+    }
+};
+
+const retryFailedOrder = async (req, res) => {
+
+    //handle only for failed orders
+    try {
+        const { orderId, failure_reason, failure_details,razorpayOrderId} = req.body;
+
+        console.log("Retrying failed order:", req.body);
+
+
+        const orderExists2 = await Order.findOne({razorpayOrderId: razorpayOrderId});
+
+      
+
+        console.log("Found order by razorpayOrderId:", orderExists2);
+
+        if (!orderExists2) {
+            return res.status(404).json({ status: 'error', message: 'Failed order not found' });
+        }
+
+        orderExists2.status = 'Failed';
+
+
+        await orderExists2.save();
+        res.status(200).json({ status: 'success', order: orderExists2 });
+
+    } catch (error) {
+        console.error('Error retrying failed order:', error);
+        res.status(500).json({ status: 'error', error: error.message });
+    }
+
+ 
+};
+
 const generateOrderRazorpay = (orderId, total) => {
     return new Promise((resolve, reject) => {
         const options = {
@@ -244,8 +381,6 @@ const generateOrderRazorpay = (orderId, total) => {
         });
     });
 };
-
-
 
 
 
@@ -313,46 +448,111 @@ const retryOrderPlacement = async (failedOrderId, paymentDetails) => {
 
 const getOrderListPageAdmin = async (req, res) => {
     try {
-        const { page = 1, status, name } = req.query;
+        let {
+            page = 1,
+            status = "all",
+            name = "",
+            fromDate = "",
+            toDate = ""
+        } = req.query;
+
+        page = parseInt(page);
         const itemsPerPage = 15;
 
-        // Build the query object based on the status and name filters
-        let query = {};
-        if (status && status !== 'all') {
+        /* -------------------- BUILD QUERY -------------------- */
+        const query = {};
+
+        // Status filter
+        if (status !== "all") {
             query.status = status;
         }
-        if (name) {
-            query['address.name'] = { $regex: name, $options: 'i' }; // Case-insensitive search
+
+        // Name search (address.name is inside array)
+        if (name.trim()) {
+            query["address.name"] = { $regex: name.trim(), $options: "i" };
         }
 
-        // Get the total number of orders matching the query
-        const totalOrders = await Order.countDocuments(query);
-        
-        // Calculate the pagination details
-        const currentPage = parseInt(page);
-        const totalPages = Math.ceil(totalOrders / itemsPerPage);
-        const startIndex = (currentPage - 1) * itemsPerPage;
+        // Date range filter with validation
+        if (fromDate && toDate) {
+            const startDate = new Date(fromDate);
+            const endDate = new Date(toDate);
 
-        // Get the orders for the current page
+            // Validation
+            if (isNaN(startDate) || isNaN(endDate)) {
+                return res.status(400).send("Invalid date format");
+            }
+
+            if (startDate > endDate) {
+                return res.status(400).send("From date cannot be after To date");
+            }
+
+            // Include full end day
+            endDate.setHours(23, 59, 59, 999);
+
+            query.createdOn = {
+                $gte: startDate,
+                $lte: endDate
+            };
+        }
+
+        /* -------------------- PAGINATION -------------------- */
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders / itemsPerPage);
+        const skip = (page - 1) * itemsPerPage;
+
         const orders = await Order.find(query)
             .sort({ createdOn: -1 })
-            .skip(startIndex)
+            .skip(skip)
             .limit(itemsPerPage)
-            .populate('address')
             .lean();
 
-        // Render the orders-list view with the filtered and paginated orders
+        /* -------------------- RENDER -------------------- */
         res.render("orders-list", {
             orders,
+            currentPage: page,
             totalPages,
-            currentPage,
-            selectedStatus: status || 'all',
-            searchName: name || ''
+            selectedStatus: status,
+            searchName: name,
+            fromDate,
+            toDate
         });
+
     } catch (error) {
-        console.log(error.message);
+        console.error("Admin Order List Error:", error);
+        res.status(500).send("Server Error");
     }
 };
+
+// In orderController.js
+const getOrderListDataAdmin = async (req,res)=>{
+    try{
+        let { page=1, status="all", name="", fromDate="", toDate="" } = req.query;
+        page = parseInt(page);
+        const itemsPerPage = 15;
+
+        const query = {};
+        if(status!=="all") query.status = status;
+        if(name.trim()) query["address.name"] = {$regex: name.trim(), $options:"i"};
+
+        if(fromDate && toDate){
+            const start = new Date(fromDate);
+            const end = new Date(toDate);
+            end.setHours(23,59,59,999);
+            query.createdOn = { $gte:start, $lte:end };
+        }
+
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders/itemsPerPage);
+        const skip = (page-1)*itemsPerPage;
+        const orders = await Order.find(query).sort({createdOn:-1}).skip(skip).limit(itemsPerPage).lean();
+
+        res.json({ orders, currentPage: page, totalPages });
+    } catch(err){
+        console.error(err);
+        res.status(500).json({ error:"Server Error" });
+    }
+};
+
 
 
 
@@ -463,6 +663,8 @@ const getOrderDetailsPage = async (req, res) => {
 
         const returnRequests = await Return.find({ orderId: orderId }).populate('productId').sort({ createdAt: -1 });
 
+        console.log(`orders ${findOrder}, user ${findUser}, returns ${returnRequests}`);
+
         res.render("orderDetails", { orders: findOrder, user: findUser, returnRequests });
     } catch (error) {
         console.error('Error occurred:', error.message);
@@ -556,14 +758,11 @@ const getOrderDetailsPageAdmin = async (req, res) => {
 
 
 
-const getInvoice = async (req, res) => {
-    try {
-        // console.log("helloooo");
-        await invoice.invoice(req, res);
-    } catch (error) {
-        console.log(error.message);
-    }
-}
+    const getInvoice = async (req, res) => {
+        console.log("Invoice request received");
+        return invoice.invoice(req, res);
+    }; 
+
 
 const cancelProduct = async (req, res) => {
     try {
@@ -758,68 +957,6 @@ const logPaymentFailure = async (req, res) => {
 };
 
 
-const savePendingOrder = async (req, res) => {
-    const { order_id, user_id, product_id, total_price, address_id, payment_id } = req.body; // Extract payment_id from req.body
-   
-    // console.log( payment_id,">>>>>>>>>2");
-    try {
-        // Fetch user and address details
-        const user = await User.findById(user_id);
-        const couponDiscount = req.session.coupon || 0;
-        const payment = req.session.payment;
-        if (!user) {
-            return res.status(404).send({ status: 'User not found' });
-        }
-
-        const address = await Address.findOne({ userId: user_id });
-        if (!address) {
-            return res.status(404).send({ status: 'Address not found' });
-        }
-
-        const findAddress = address.address.find(item => item._id.toString() === address_id);
-        if (!findAddress) {
-            return res.status(404).send({ status: 'Address not found' });
-        }
-
-        // Fetch product details
-        const products = await Product.find({ _id: { $in: product_id } });
-
-        const cartItemQuantities = user.cart.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity
-        }));
-        // Format product details
-        const productDetails = products.map(item => ({
-            _id: item._id,
-            price: item.salePrice,
-            regularPrice: item.regularPrice,
-            name: item.productName,
-            productOffer: item.regularPrice - item.salePrice,
-            image: item.productImage[0],
-            quantity: cartItemQuantities.find(cartItem => cartItem.productId.toString() === item._id.toString()).quantity
-        }));
-
-        // Create a new pending order
-        const pendingOrder = new Order({
-            product: productDetails,
-            totalPrice: total_price,
-            address: findAddress,
-            userId: user_id,
-            couponDiscount,
-            payment: payment,
-           // Store the payment ID along with the order
-            status: 'Pending'
-        });
-
-        // Save the pending order
-        await pendingOrder.save();
-        res.status(200).send({ status: 'Pending order saved' });
-    } catch (error) {
-        console.error('Error saving pending order:', error);
-        res.status(500).send({ status: 'error', error: error.message });
-    }
-};
-
 
 // Function to process payment using Razorpay
 const processPayment = async (amount, paymentId) => {
@@ -854,5 +991,7 @@ module.exports = {
     returnProduct,
     savePendingOrder,
     logPaymentFailure,
+    getOrderListDataAdmin,
+    retryFailedOrder
 
 }

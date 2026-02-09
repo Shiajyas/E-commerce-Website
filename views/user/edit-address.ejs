@@ -1,108 +1,189 @@
 <%- include("../partials/header") %>
-<div class="container mt-4">
-    <h3 class="mt-3 text-center" style="color: #046963; margin-bottom: 70px;">Edit User Address</h3>
+
+<div class="container mt-90">
+    <h3 class="mt-3 text-center" style="color:#046963; margin-bottom:70px;">
+        Edit User Address
+    </h3>
+
     <form id="addressForm" class="border-0 p-3">
+
+        <!-- Row 1 -->
         <div class="row mb-4">
             <div class="form-group col-md-4">
-                <label for="addressType">Address Type:</label>
-                <input type="text" class="form-control border-3" value="<%= address.addressType %>" id="addressType" name="addressType" required>
+                <label>Address Type</label>
+                <input type="text" class="form-control border-3"
+                       id="addressType" name="addressType"
+                       value="<%= address.addressType %>" required>
             </div>
+
             <div class="form-group col-md-4">
-                <label for="name">Name:</label>
-                <input type="text" class="form-control border-3" value="<%= address.name %>" id="name" name="name" required>
+                <label>Name</label>
+                <input type="text" class="form-control border-3"
+                       id="name" name="name"
+                       value="<%= address.name %>" required>
             </div>
+
             <div class="form-group col-md-4">
-                <label for="city">City:</label>
-                <input type="text" class="form-control border-3" id="city" value="<%= address.city %>" name="city" required>
+                <label>City</label>
+                <input type="text" class="form-control border-3"
+                       id="city" name="city"
+                       value="<%= address.city %>" required>
             </div>
         </div>
+
+        <!-- Row 2 -->
         <div class="row mb-4">
             <div class="form-group col-md-4">
-                <label for="landMark">Landmark:</label>
-                <input type="text" class="form-control border-3" value="<%= address.landMark %>" id="landMark" name="landMark" required>
+                <label>Landmark</label>
+                <input type="text" class="form-control border-3"
+                       id="landMark" name="landMark"
+                       value="<%= address.landMark %>" required>
             </div>
+
             <div class="form-group col-md-4">
-                <label for="state">State:</label>
-                <input type="text" class="form-control border-3" value="<%= address.state %>" id="state" name="state" required>
+                <label>State</label>
+                <input type="text" class="form-control border-3"
+                       id="state" name="state"
+                       value="<%= address.state %>" required>
             </div>
+
             <div class="form-group col-md-4">
-                <label for="pincode">Pincode:</label>
-                <input type="number" class="form-control border-3" value="<%= address.pincode %>" id="pincode" name="pincode" required>
+                <label>Pincode</label>
+                <input type="number" class="form-control border-3"
+                       id="pincode" name="pincode"
+                       value="<%= address.pincode %>" required>
             </div>
         </div>
+
+        <!-- Row 3 -->
         <div class="row mb-4">
             <div class="form-group col-md-4">
-                <label for="email">Email:</label>
-                <input type="email" class="form-control border-3" id="email" value="<%= address.email %>" name="email" required>
+                <label>Email</label>
+                <input type="email" class="form-control border-3"
+                       id="email" name="email"
+                       value="<%= address.email %>" required>
             </div>
+
             <div class="form-group col-md-4">
-                <label for="phone">Phone:</label>
-                <input type="tel" class="form-control border-3" id="phone" value="<%= address.phone %>" name="phone" required>
+                <label>Phone</label>
+                <input type="tel"
+                       class="form-control border-3"
+                       id="phone"
+                       name="phone"
+                       maxlength="10"
+                       value="<%= address.phone %>"
+                       oninput="allowOnlyNumbers(this)"
+                       required>
             </div>
+
             <div class="form-group col-md-4">
-                <label for="altPhone">Alternate Phone:</label>
-                <input type="tel" class="form-control border-3" id="altPhone" value="<%= address.altPhone %>" name="altPhone" required>
+                <label>Alternate Phone</label>
+                <input type="tel"
+                       class="form-control border-3"
+                       id="altPhone"
+                       name="altPhone"
+                       maxlength="10"
+                       value="<%= address.altPhone %>"
+                       oninput="allowOnlyNumbers(this)"
+                       required>
             </div>
         </div>
+
         <div class="text-center">
-            <button type="submit" id="submitButton" class="btn btn-primary">Submit</button>
+            <button type="submit" id="submitButton" class="btn btn-primary">
+                Submit
+            </button>
         </div>
+
     </form>
 </div>
 
+<!-- ================= JS ================= -->
 <script>
-    document.getElementById('addressForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        if (validateForm()) {
-            const formData = new FormData(this);
-            const formObject = {};
-            formData.forEach((value, key) => formObject[key] = value);
 
-            fetch('/editAddress?id=<%= address._id.toLocaleString() %>', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formObject),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        title: 'Success',
-                        text: data.message,
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        window.location.href = '/profile'; // Redirect after confirmation
-                    });
-                } else {
-                    Swal.fire('Error', data.message, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire('Error', 'Failed to update the address. Please try again later.', 'error');
-            });
-        }
+    // Allow digits only
+    function allowOnlyNumbers(input) {
+        input.value = input.value.replace(/\D/g, '');
+    }
+
+    // Indian phone validation
+ 
+    document.getElementById("addressForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        if (!validateForm()) return;
+
+        document.getElementById("submitButton").disabled = true;
+
+        const formData = new FormData(this);
+        const data = {};
+        formData.forEach((value, key) => data[key] = value);
+
+        fetch("/editAddress?id=<%= address._id %>", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(response => {
+            if (response.success) {
+                Swal.fire({
+                    icon: "success",
+                    title: "Updated",
+                    text: response.message
+                }).then(() => {
+                    window.location.href = "/profile";
+                });
+            } else {
+                Swal.fire("Error", response.message, "error");
+                document.getElementById("submitButton").disabled = false;
+            }
+        })
+        .catch(() => {
+            Swal.fire("Error", "Something went wrong", "error");
+            document.getElementById("submitButton").disabled = false;
+        });
     });
 
     function validateForm() {
-        let isValid = true;
-        const requiredFields = ["addressType", "name", "city", "landMark", "state", "pincode", "email", "phone", "altPhone"];
-        requiredFields.forEach(function (field) {
-            const input = document.getElementById(field);
-            if (input.value.trim() === "") {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Please fill all the fields.',
-                    icon: 'error'
-                });
-                isValid = false;
+        const requiredFields = [
+            "addressType", "name", "city", "landMark",
+            "state", "pincode", "email", "phone", "altPhone"
+        ];
+
+        for (let field of requiredFields) {
+            if (!document.getElementById(field).value.trim()) {
+                Swal.fire("Error", "All fields are required", "error");
+                return false;
             }
-        });
-        return isValid;
+        }
+
+        let isValidPhone = function (number) {
+            const phoneRegex = /^[0-9]{10}$/;
+            return phoneRegex.test(number);
+        };
+
+        const phone = document.getElementById("phone").value.trim();
+        const altPhone = document.getElementById("altPhone").value.trim();
+
+        if (!isValidPhone(phone)) {
+            Swal.fire("Invalid Phone", "Phone must be 10 digits ", "error");
+            return false;
+        }
+
+        if (!isValidPhone(altPhone)) {
+            Swal.fire("Invalid Alternate Phone", "Alternate phone must be valid", "error");
+            return false;
+        }
+
+        if (phone === altPhone) {
+            Swal.fire("Invalid Numbers", "Phone and Alternate Phone cannot be same", "error");
+            return false;
+        }
+
+        return true;
     }
+
 </script>
 
 <%- include("../partials/footer") %>

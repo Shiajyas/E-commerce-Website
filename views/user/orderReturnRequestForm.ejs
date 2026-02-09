@@ -1,100 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Return Request Form</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+<%- include("../partials/header") %> <!-- or your full header code -->
 
-        .container {
-            background: #fff;
-            padding: 20px 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 100%;
-        }
+<!-- SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        h1 {
-            text-align: center;
-            color: #333;
-        }
+<style>
+/* ===== RETURN FORM STYLING ===== */
+.return-container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    max-width: 650px;
+    width: 100%;
+    margin: 50px auto;
+}
 
-        h2 {
-            color: #666;
-            margin-top: 20px;
-        }
+.return-container h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+}
 
-        p {
-            margin: 5px 0;
-            color: #555;
-        }
+.return-container h2 {
+    color: #424a43;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
 
-        .product-list div {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+.return-container p {
+    color: #555;
+    margin: 5px 0;
+}
 
-        .product-list label {
-            margin-left: 10px;
-            color: #333;
-        }
+.product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
 
-        .quantity-input {
-            width: 50px;
-            margin-left: 10px;
-        }
+.product-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    transition: background 0.2s ease;
+    flex-wrap: wrap; /* wrap for long names */
+}
 
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-top: 10px;
-            resize: vertical;
-        }
+.product-item:hover {
+    background: #e8f5e9;
+}
 
-        button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            border: none;
-            background-color: #28a745;
-            color: white;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
+.product-item input[type="checkbox"] {
+    flex: 0 0 auto;
+}
 
-        button:hover {
-            background-color: #218838;
-        }
+.product-item label {
+    flex: 1 1 auto; /* grow/shrink */
+    margin-left: 10px;
+    word-break: break-word; /* wrap long product names */
+    color: #333;
+}
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 15px 20px;
-            }
+.quantity-input {
+    flex: 0 0 60px;
+    margin-left: 10px;
+    padding: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
 
-            h1, h2 {
-                font-size: 1.5em;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
+textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    font-size: 14px;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background-color: #505550;
+    color: white;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: 0.3s ease;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+@media (max-width: 600px) {
+    .return-container {
+        padding: 20px;
+        margin: 20px 10px;
+    }
+
+    h1, h2 {
+        font-size: 1.5em;
+    }
+
+    .product-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .quantity-input {
+        margin-top: 8px;
+    }
+}
+</style>
+
+<main class="main">
+    <div class="return-container">
         <h1>Return Request Form</h1>
 
         <form id="returnForm">
@@ -102,20 +130,20 @@
             <input type="hidden" name="userId" value="<%= user._id %>">
 
             <h2>User Information</h2>
-            <p>Name: <%= user.name %></p>
-            <p>Email: <%= user.email %></p>
+            <p><strong>Name:</strong> <%= user.name %></p>
+            <p><strong>Email:</strong> <%= user.email %></p>
 
             <h2>Order Information</h2>
-            <p>Order ID: <%= order._id %></p>
-
+            <p><strong>Order Date:</strong> <%= new Date(order.createdOn).toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'}) %></p>
+            <p><strong>Order Time:</strong> <%= new Date(order.createdOn).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) %></p>
             <h2>Products</h2>
             <div class="product-list">
                 <% products.forEach(product => { %>
-                    <div>
-                        <input type="checkbox" name="productIds" value="<%= product._id %>" id="product-<%= product._id %>" class="product-checkbox">
-                        <label for="product-<%= product._id %>"><%= product.name %> - <%= product.price %></label>
-                        <input type="number" name="quantity-<%= product._id %>" min="1" max="<%= product.quantity %>" placeholder="1" class="quantity-input" disabled>
-                    </div>
+                <div class="product-item">
+                    <input type="checkbox" name="productIds" value="<%= product._id %>" id="product-<%= product._id %>" class="product-checkbox">
+                    <label for="product-<%= product._id %>"><%= product.name %> - ₹<%= product.price %></label>
+                    <input type="number" name="quantity-<%= product._id %>" min="1" max="<%= product.quantity %>" placeholder="1" class="quantity-input" disabled>
+                </div>
                 <% }); %>
             </div>
 
@@ -125,72 +153,90 @@
             <button type="submit">Submit Return Request</button>
         </form>
     </div>
+</main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const checkboxes = document.querySelectorAll('.product-checkbox');
-            const quantities = document.querySelectorAll('.quantity-input');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
 
-            checkboxes.forEach((checkbox) => {
-                checkbox.addEventListener('change', (event) => {
-                    const quantityInput = document.querySelector(`input[name='quantity-${checkbox.value}']`);
-                    quantityInput.disabled = !checkbox.checked;
-                    if (!checkbox.checked) {
-                        quantityInput.value = '';
-                    }
-                });
-            });
-
-            const form = document.getElementById('returnForm');
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-
-                const formData = new FormData(form);
-                const data = {
-                    userId: formData.get('userId'),
-                    orderId: formData.get('orderId'),
-                    reason: formData.get('reason'),
-                    products: []
-                };
-
-                const productIds = formData.getAll('productIds');
-                productIds.forEach((productId) => {
-                    const quantity = formData.get(`quantity-${productId}`);
-                    if (quantity) {
-                        data.products.push({
-                            productId: productId,
-                            quantity: quantity
-                        });
-                    }
-                });
-
-                if (data.products.length === 0) {
-                    alert('Please select at least one product and specify the quantity.');
-                    return;
-                }
-
-                try {
-                    const response = await fetch('/raiseReturnRequest', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(data)
-                    });
-
-                    const result = await response.json();
-                    if (response.ok) {
-                        alert('Return request submitted successfully');
-                        window.location.href = `/orderDetails?id=${data.orderId}`;
-                    } else {
-                        alert('Error: ' + result.message);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('An error occurred while submitting the return request.');
-                }
-            });
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            const quantityInput = document.querySelector(`input[name='quantity-${checkbox.value}']`);
+            quantityInput.disabled = !checkbox.checked;
+            if (!checkbox.checked) quantityInput.value = '';
         });
-    </script>
-</body>
-</html>
+    });
+
+    const form = document.getElementById('returnForm');
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const data = {
+            userId: formData.get('userId'),
+            orderId: formData.get('orderId'),
+            reason: formData.get('reason'),
+            products: []
+        };
+
+        const productIds = formData.getAll('productIds');
+        productIds.forEach(productId => {
+            const quantity = formData.get(`quantity-${productId}`);
+            if (quantity) {
+                data.products.push({ productId, quantity });
+            }
+        });
+
+        if (data.products.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Oops!',
+                text: 'Please select at least one product and specify the quantity.'
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Confirm Return',
+            text: `Are you sure you want to return ${data.products.length} product(s)?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, submit',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch('/raiseReturnRequest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const resultData = await response.json();
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: resultData.message
+                    }).then(() => {
+                        window.location.href = `/orderDetails?id=${data.orderId}`;
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: resultData.message
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An unexpected error occurred.'
+                });
+            }
+        }
+    });
+});
+</script>
