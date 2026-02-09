@@ -592,19 +592,23 @@ deliveredDate: order.deliveredAt
     </body>
     </html>`;
 
+      console.log("Chrome path:", puppeteer.executablePath());
+
+
 const browser = await puppeteer.launch({
-  headless: "new",
-  executablePath: path.join(
-    process.cwd(),
-    ".cache",
-    "puppeteer",
-    "chrome",
-    "linux-144.0.7559.96",
-    "chrome-linux64",
-    "chrome"
-  ),
-  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  headless: true,
+  executablePath: puppeteer.executablePath(),
+
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--no-zygote",
+    "--single-process"
+  ]
 });
+
 
     const page = await browser.newPage();
     await page.setContent(html);
@@ -1098,17 +1102,16 @@ const generateLedgerPdf= async (req, res) => {
     -------------------------------------------------*/
    
 const browser = await puppeteer.launch({
-  headless: "new",
-  executablePath: path.join(
-    process.cwd(),
-    ".cache",
-    "puppeteer",
-    "chrome",
-    "linux-144.0.7559.96",
-    "chrome-linux64",
-    "chrome"
-  ),
-  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  headless: true,
+  executablePath: puppeteer.executablePath(),
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--no-zygote",
+    "--single-process"
+  ]
 });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
