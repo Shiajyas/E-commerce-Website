@@ -141,7 +141,15 @@ ${products.map(p => `
             /* ---------- GENERATE PDF ---------- */
 const browser = await puppeteer.launch({
   headless: "new",
-  executablePath: puppeteer.executablePath(),
+  executablePath: path.join(
+    process.cwd(),
+    ".cache",
+    "puppeteer",
+    "chrome",
+    "linux-144.0.7559.96",
+    "chrome-linux64",
+    "chrome"
+  ),
   args: ["--no-sandbox", "--disable-setuid-sandbox"]
 });
 

@@ -591,9 +591,17 @@ deliveredDate: order.deliveredAt
     </body>
     </html>`;
 
-    const browser = await puppeteer.launch({
+const browser = await puppeteer.launch({
   headless: "new",
-  executablePath: puppeteer.executablePath(),
+  executablePath: path.join(
+    process.cwd(),
+    ".cache",
+    "puppeteer",
+    "chrome",
+    "linux-144.0.7559.96",
+    "chrome-linux64",
+    "chrome"
+  ),
   args: ["--no-sandbox", "--disable-setuid-sandbox"]
 });
 
@@ -1088,12 +1096,19 @@ const generateLedgerPdf= async (req, res) => {
        6️⃣ Puppeteer PDF
     -------------------------------------------------*/
    
-    const browser = await puppeteer.launch({
+const browser = await puppeteer.launch({
   headless: "new",
-  executablePath: puppeteer.executablePath(),
+  executablePath: path.join(
+    process.cwd(),
+    ".cache",
+    "puppeteer",
+    "chrome",
+    "linux-144.0.7559.96",
+    "chrome-linux64",
+    "chrome"
+  ),
   args: ["--no-sandbox", "--disable-setuid-sandbox"]
 });
-
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
     await page.emulateMediaType("screen");
