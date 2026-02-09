@@ -12,7 +12,6 @@ const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
 const Brand = require("../models/brandSchema")
 const puppeteer = require("puppeteer");
-const path = require("path")
 
 // const getDashboard = async (req, res) => {
 //     try {
@@ -591,25 +590,8 @@ deliveredDate: order.deliveredAt
 
     </body>
     </html>`;
-
-      console.log("Chrome path:", puppeteer.executablePath());
-
-
-const browser = await puppeteer.launch({
-  headless: true,
-  executablePath: puppeteer.executablePath(),
-
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--no-zygote",
-    "--single-process"
-  ]
-});
-
-
+      
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox","--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await page.setContent(html);
     const pdf = await page.pdf({ format: "A4", printBackground: true });
@@ -1100,19 +1082,7 @@ const generateLedgerPdf= async (req, res) => {
     /* ------------------------------------------------
        6️⃣ Puppeteer PDF
     -------------------------------------------------*/
-   
-const browser = await puppeteer.launch({
-  headless: true,
-  executablePath: puppeteer.executablePath(),
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--no-zygote",
-    "--single-process"
-  ]
-});
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox","--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
     await page.emulateMediaType("screen");
