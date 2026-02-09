@@ -590,8 +590,11 @@ deliveredDate: order.deliveredAt
 
     </body>
     </html>`;
+const browser = await puppeteer.launch({
+  headless: "new",
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
 
-    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
     const page = await browser.newPage();
     await page.setContent(html);
     const pdf = await page.pdf({ format: "A4", printBackground: true });
