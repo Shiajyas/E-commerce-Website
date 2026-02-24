@@ -672,86 +672,52 @@ const getOrderDetailsPage = async (req, res) => {
     }
 };
 
-
 const getOrderDetailsPageAdmin = async (req, res) => {
     try {
         const orderId = req.query.id;
-        const findOrder = await Order.findOne({ _id: orderId }).sort({ createdOn: 1 });
+
+        const findOrder = await Order.findById(orderId).lean();
 
         if (!findOrder) {
-            console.error("findOrder is null or undefined");
             return res.status(404).render("error", { message: "Order not found" });
         }
 
-        let products = findOrder.product;
+        const userId = findOrder.userId;
+
+        const coupons = await Coupon.find({ userId });
+
         let productDetailsList = [];
-        let coupons = [];
 
-        if (Array.isArray(products)) {
-            const userId = findOrder.userId;
-            coupons = await Coupon.find({ userId: userId });
+        for (const item of findOrder.product) {
+            const productDetails = await Product.findById(item._id).lean();
+            if (!productDetails) continue;
 
-            for (const product of products) {
-                if (product._id) {
-                    try {
-                        const productDetails = await Product.findById(product._id).lean();
-                        if (productDetails) {
-                            let originalPrice = productDetails.salePrice;
-
-                                if (originalPrice === undefined) {
-                                console.error(`Product with ID ${product._id} does not have a salePrice field`);
-                                continue;
-                            }
-
-                            let salePrice = productDetails.salePrice;
-                            let offerPrice = 0; // Initialize offerPrice to 0
-
-                            const applicableCoupon = coupons.find(coupon => coupon.userId.includes(userId));
-                            if (applicableCoupon) {
-                                offerPrice += applicableCoupon.offerPrice;
-                            }
-
-                            let totalPrice = findOrder.totalPrice;
-
-                            productDetailsList.push({
-                                ...productDetails,
-                                quantity: product.quantity,
-                                totalPrice: parseFloat(totalPrice),
-                                offerPrice: parseFloat(offerPrice)
-                            });
-
-                            // console.log("Product ID:", product._id);
-                            // console.log("Original sale price:", productDetails.salePrice);
-                            // console.log("Coupon offer price:", applicableCoupon ? applicableCoupon.offerPrice : 0);
-                            // console.log("Total offer price:", offerPrice);
-                            // console.log("Final sale price:", salePrice);
-                        } else {
-                            console.error(`No product found with _id: ${product._id}`);
-                        }
-                    } catch (error) {
-                        console.error(`Failed to find product with _id: ${product._id}`, error);
-                    }
-                } else {
-                    console.error(`Product does not have an _id field`);
-                }
-            }
-        } else {
-            console.error("products is not an array");
+            productDetailsList.push({
+                ...productDetails,
+                quantity: item.quantity,
+                totalPrice: productDetails.salePrice * item.quantity
+            });
         }
 
-        const returnRequests = await Return.find({ orderId: orderId })
-            .populate('userId')
-            .populate('productId');
+        const returnRequests = await Return.find({ orderId })
+            .populate("userId")
+            .populate("productId");
 
         res.render("order-details-admin", {
             orders: findOrder,
             orderId,
             returnRequests,
             productDetailsList,
-            coupons
+            coupons,
+
+            // ✅ IMPORTANT
+            couponDiscount: findOrder.couponDiscount || 0,
+            grandTotal: findOrder.totalPrice
         });
+
     } catch (error) {
         console.log(error.message);
+        res.status(500).send("Server Error");
     }
 };
 

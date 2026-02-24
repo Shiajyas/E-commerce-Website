@@ -107,9 +107,7 @@
                 <th>Date</th>
                 <th>Payment</th>
                 <th>Status</th>
-                <th>Total</th>
-                <th>Product/Category Cutoff</th>
-                <th class="text-end">Coupon Cutoff</th>
+                
                 <th class="text-end">Final Price</th>
             </tr>
         </thead>
@@ -123,9 +121,6 @@
                     <td><%= new Date(d.createdOn).toLocaleString('en-IN') %></td>
                     <td><%= d.payment %></td>
                     <td><%= d.status %></td>
-                    <td class="text-end"><%= d.product[0].price * 2 %></td>
-                    <td class="text-end"><%= (d.product[0].price * 2) - d.totalPrice - d.couponDiscount %></td>
-                    <td class="text-end"><%= d.couponDiscount %></td>
                     <td class="text-end"><%= d.totalPrice %></td>
                 </tr>
             <% }) %>

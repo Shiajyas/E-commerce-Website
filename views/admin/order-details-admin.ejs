@@ -146,78 +146,84 @@
                                                     </tr>
                                                     
                                                 </thead>
-                                                <tbody>
-                                                    <% 
-                                                    let grandTotal = 0;
-                                                    let maxTotal = 0;
-                                                    let totalOfferPrice = 0;
-                                                    let hasOffer = false;
-                                                    let total = 0;
-                                                    let productT = 0
-                                                    let discount = 0;
-                                                    productDetailsList.forEach(product => {
-                                                        const totalPrice = parseFloat(product.totalPrice);
-                                                        const salePrice = parseFloat(product.salePrice);
-                                                        const offerPrice = parseFloat(product.offerPrice || 0); // Ensure offerPrice is properly initialized
-                                                        const productOffer = parseFloat(product.productOffer || 0);
-                                                        const regularPrice = parseFloat(product.regularPrice);
-                                                        const quantity = parseInt(product.quantity);
-                                                        const productTotal = salePrice * quantity;
-                                                        productT += productTotal
-                                                        total = productTotal;
-                                                       
-                                                        grandTotal = totalPrice; 
-                                                        maxTotal = totalPrice + offerPrice;
-                                                        totalOfferPrice = offerPrice; 
-                                                        discount = regularPrice - salePrice
-                                                        if (productT > grandTotal) {
-                                                            hasOffer = true;
-                                                        }
-                                                    %>
-                                                    <tr>
-                                                        <td class="text-center">
-                                                            <% if (product.productImage && product.productImage.length > 0) { %>
-                                                                <img src="/uploads/product-images/<%= product.productImage[0] %>" style="height: 7rem; width: 7rem;" class="img-fluid rounded" alt="Item">
-                                                            <% } %>
-                                                        </td>
-                                                        <td class="text-center align-middle">
-                                                            <%= product.title || product.productName %>
-                                                        </td>
-                                                        <td class="text-center align-middle">
-                                                            ₹<%= regularPrice.toLocaleString() %>
-                                                        </td>
-                                                        <td class="text-center align-middle">
-                                                            - ₹<%= discount.toLocaleString() %>
-                                                        </td>
-                                                        <td class="text-center align-middle">
-                                                            ₹<%= salePrice.toLocaleString() %>
-                                                        </td>
-                                                        <td class="text-center align-middle">
-                                                            <%= quantity %>
-                                                        </td>
-                                                        <td class="text-center align-middle">
-                                                            ₹<%= total.toLocaleString() %>
-                                                        </td>
-                                                    </tr>
-                                                    <% }) %>
-                                                </tbody>
-                                                
-                                                <tfoot>
-                                                    <% if (hasOffer) { %>
-                                                    <tr class="text-center">
-                                                        <th colspan="6" class="text-end text-primary" style="padding-right: 20px;">Total</th>
-                                                        <th class="text-center text-primary">₹<%= maxTotal.toLocaleString() %></th>
-                                                    </tr>
-                                                    <tr class="text-center">
-                                                        <th colspan="6" class="text-end text-success" style="padding-right: 20px;">Coupon</th>
-                                                        <th class="text-center text-success">-₹<%= totalOfferPrice.toLocaleString() %></th>
-                                                    </tr>
-                                                    <% } %>
-                                                    <tr class="text-center">
-                                                        <th colspan="6" class="text-end text-danger" style="padding-right: 20px;">Grand Total</th>
-                                                        <th class="text-center text-danger">₹<%= grandTotal.toLocaleString() %></th>
-                                                    </tr>
-                                                </tfoot>
+                                            <tbody>
+<% 
+let subTotal = 0;              // regular total
+let totalDiscount = 0;         // product + category discount
+let calculatedGrandTotal = 0;  // after discount
+
+productDetailsList.forEach(product => {
+
+    const regularPrice = parseFloat(product.regularPrice || 0);
+    const salePrice = parseFloat(product.salePrice || 0);
+    const quantity = parseInt(product.quantity || 0);
+
+    const productRegularTotal = regularPrice * quantity;
+    const productSaleTotal = salePrice * quantity;
+    const productDiscount = (regularPrice - salePrice) 
+
+    subTotal += productSaleTotal;
+    totalDiscount += productDiscount;
+    calculatedGrandTotal += productSaleTotal;
+%>
+<tr>
+    <td class="text-center">
+        <% if (product.productImage && product.productImage.length > 0) { %>
+            <img src="/uploads/product-images/<%= product.productImage[0] %>" 
+                 style="height: 7rem; width: 7rem;" 
+                 class="img-fluid rounded" 
+                 alt="Item">
+        <% } %>
+    </td>
+
+    <td class="text-center align-middle">
+        <%= product.title || product.productName %>
+    </td>
+
+    <td class="text-center align-middle">
+        ₹<%= regularPrice.toLocaleString() %>
+    </td>
+
+    <td class="text-center align-middle text-success">
+        - ₹<%= productDiscount.toLocaleString() %>
+    </td>
+
+    <td class="text-center align-middle">
+        ₹<%= salePrice.toLocaleString() %>
+    </td>
+
+    <td class="text-center align-middle">
+        <%= quantity %>
+    </td>
+
+    <td class="text-center align-middle fw-bold">
+        ₹<%= productSaleTotal.toLocaleString() %>
+    </td>
+</tr>
+<% }) %>
+</tbody>
+
+                                               <tfoot>
+
+<tr class="text-center">
+    <th colspan="6" class="text-end">Subtotal (Regular Price)</th>
+    <th>₹<%= subTotal.toLocaleString() %></th>
+</tr>
+
+<tr class="text-center text-success">
+    <th colspan="6" class="text-end">Coupon Discount</th>
+    <th>- ₹<%= (couponDiscount || 0).toLocaleString() %></th>
+</tr>
+
+<tr class="text-center text-danger fw-bold">
+    <th colspan="6" class="text-end">Grand Total</th>
+    <th>
+        ₹<%= (calculatedGrandTotal - (couponDiscount || 0)).toLocaleString() %>
+    </th>
+</tr>
+
+</tfoot>
+
                                             </table>
                                             
                                             <% } else { %>

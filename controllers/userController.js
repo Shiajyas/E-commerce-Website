@@ -422,28 +422,31 @@ const getProductDetailsPage = async (req, res) => {
         const user = req.session.user;
         const { id } = req.query;
 
-        // ✅ Correct product fetch
-        const findProduct = await Product
-            .findById(id)
-            .populate('category');
+        const findProduct = await Product.findById(id);
 
-        // 🛑 Product not found
         if (!findProduct) {
-            return res.status(404).render('404', {
-                message: 'Product not found'
-            });
+            return res.status(404).render("404");
         }
 
-        const findCategory = findProduct.category;
+        // find category using name
+        const findCategory = await Category.findOne({
+            name: findProduct.category
+        });
 
-        // ✅ Safe offer calculation
         const categoryOffer = findCategory?.categoryOffer || 0;
         const productOffer = findProduct.productOffer || 0;
-        const totalOffer = categoryOffer + productOffer;
+
+        // apply highest offer
+        const totalOffer = Math.max(categoryOffer, productOffer);
+
+        const finalPrice =
+            findProduct.regularPrice -
+            (findProduct.regularPrice * totalOffer) / 100;
 
         res.render("product-details", {
             data: findProduct,
             totalOffer,
+            finalPrice,
             user
         });
 

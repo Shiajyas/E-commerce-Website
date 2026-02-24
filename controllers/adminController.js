@@ -423,7 +423,7 @@ const generatePdf = async (req, res) => {
     }
 
     /* ------------------------------
-       2️⃣ FETCH ORDERS
+       2️⃣ FETCH DATA
     -------------------------------*/
     const orders = await Order.find(filter).lean();
     if (!orders.length) return res.status(400).send("No sales data found");
@@ -433,30 +433,61 @@ const generatePdf = async (req, res) => {
     -------------------------------*/
     const categories = await Category.find().lean();
     const categoryOfferMap = {};
+
     categories.forEach(c => {
-      categoryOfferMap[c.name] = c.categoryOffer || 0;
+      categoryOfferMap[c.name] = Number(c.categoryOffer || 0);
     });
 
     /* ------------------------------
-       4️⃣ ENRICH ORDERS
+       4️⃣ PROCESS ORDERS
     -------------------------------*/
     const enrichedOrders = [];
 
+    let totalRevenue = 0;
+    let totalCouponDiscount = 0;
+
+    const brandSummary = {};
+    const categorySummary = {};
+    const productSummary = {};
+
     for (const order of orders) {
+
+      // ✅ Coupon at ORDER LEVEL (only once)
+      const orderCouponDiscount = Number(order.couponDiscount || 0);
+      totalCouponDiscount += orderCouponDiscount;
+
       for (const item of order.product) {
 
-        const basePrice = Number(item.regularPrice || item.price);
+        const basePrice = Number(item.regularPrice || item.price || 0);
         const qty = Number(item.quantity || 1);
 
-        const productDiscount = Number(item.productOffer || 0);
-        const categoryOfferPercent = categoryOfferMap[item.category] || 0;
-        const categoryDiscount =
-          ((basePrice - productDiscount) * categoryOfferPercent) / 100;
+        let productDiscount = Number(item.productOffer || 0);
+        let categoryDiscount = categoryOfferMap[item.category] || 0;
 
-        const couponDiscount = order.couponDiscount || 0;
+        // ✅ Apply highest offer only
+        if (productDiscount > categoryDiscount) {
+          categoryDiscount = 0;
+        } else {
+          productDiscount = 0;
+        }
 
         const finalPrice =
-          (basePrice - productDiscount - categoryDiscount - couponDiscount) * qty;
+          (basePrice - productDiscount - categoryDiscount) * qty;
+
+        totalRevenue += finalPrice;
+
+        // ---------- Summaries ----------
+        brandSummary[item.brand] ??= { count: 0, revenue: 0 };
+        brandSummary[item.brand].count += qty;
+        brandSummary[item.brand].revenue += finalPrice;
+
+        categorySummary[item.category] ??= { count: 0, revenue: 0 };
+        categorySummary[item.category].count += qty;
+        categorySummary[item.category].revenue += finalPrice;
+
+        productSummary[item.name] ??= { count: 0, revenue: 0 };
+        productSummary[item.name].count += qty;
+        productSummary[item.name].revenue += finalPrice;
 
         enrichedOrders.push({
           customer: order.address?.[0]?.name || "Unknown",
@@ -464,77 +495,42 @@ const generatePdf = async (req, res) => {
           brand: item.brand,
           category: item.category,
           orderDate: moment(order.createdOn).format("DD-MM-YYYY"),
-deliveredDate: order.deliveredAt
-  ? moment(order.deliveredAt).format("DD-MM-YYYY")
-  : moment(order.updatedAt).format("DD-MM-YYYY"),
-
+          deliveredDate: order.deliveredAt
+            ? moment(order.deliveredAt).format("DD-MM-YYYY")
+            : moment(order.updatedAt).format("DD-MM-YYYY"),
           qty,
           basePrice,
           productDiscount,
           categoryDiscount,
-          couponDiscount,
           finalPrice,
         });
       }
     }
 
-    /* ------------------------------
-       5️⃣ AGGREGATION
-    -------------------------------*/
-    let totalRevenue = 0,
-        totalProductDiscount = 0,
-        totalCategoryDiscount = 0,
-        totalCouponDiscount = 0;
-
-    const brandSummary = {};
-    const categorySummary = {};
-    const productSummary = {};
-
-    enrichedOrders.forEach(o => {
-      totalRevenue += o.finalPrice;
-      totalProductDiscount += o.productDiscount;
-      totalCategoryDiscount += o.categoryDiscount;
-      totalCouponDiscount += o.couponDiscount;
-
-      brandSummary[o.brand] ??= { count: 0, revenue: 0 };
-      brandSummary[o.brand].count++;
-      brandSummary[o.brand].revenue += o.finalPrice;
-
-      categorySummary[o.category] ??= { count: 0, revenue: 0 };
-      categorySummary[o.category].count++;
-      categorySummary[o.category].revenue += o.finalPrice;
-
-      productSummary[o.productName] ??= { count: 0, revenue: 0 };
-      productSummary[o.productName].count++;
-      productSummary[o.productName].revenue += o.finalPrice;
-    });
+    const netRevenue = totalRevenue - totalCouponDiscount;
 
     /* ------------------------------
-       6️⃣ PDF HTML
+       5️⃣ BUILD TABLE ROWS
     -------------------------------*/
     const tableRows = enrichedOrders.map(o => `
       <tr>
         <td>${o.customer}</td>
         <td>${o.productName}</td>
-       <td>${o.orderDate}</td>
-<td>${o.deliveredDate}</td>
-
+        <td>${o.orderDate}</td>
+        <td>${o.deliveredDate}</td>
         <td>${o.brand}</td>
         <td>${o.category}</td>
         <td>${o.qty}</td>
         <td>₹${o.basePrice}</td>
-        <td>₹${o.productDiscount}</td>
-        <td>₹${o.categoryDiscount.toFixed(2)}</td>
-        <td>₹${o.couponDiscount}</td>
+        <td>₹${o.productDiscount || o.categoryDiscount}</td>
         <td><b>₹${o.finalPrice.toFixed(2)}</b></td>
       </tr>
     `).join("");
 
     const summaryTable = `
       <tr><th>Total Revenue</th><td>₹${totalRevenue.toFixed(2)}</td></tr>
-      <tr><th>Product Discount</th><td>₹${totalProductDiscount.toFixed(2)}</td></tr>
-      <tr><th>Category Discount</th><td>₹${totalCategoryDiscount.toFixed(2)}</td></tr>
       <tr><th>Coupon Discount</th><td>₹${totalCouponDiscount.toFixed(2)}</td></tr>
+      <tr><th>Net Revenue</th><td>₹${netRevenue.toFixed(2)}</td></tr>
     `;
 
     const buildSummary = obj =>
@@ -542,6 +538,9 @@ deliveredDate: order.deliveredAt
         `<tr><td>${k}</td><td>${v.count}</td><td>₹${v.revenue.toFixed(2)}</td></tr>`
       ).join("");
 
+    /* ------------------------------
+       6️⃣ HTML
+    -------------------------------*/
     const html = `
     <html>
     <head>
@@ -558,21 +557,18 @@ deliveredDate: order.deliveredAt
     <h1>Sales Report</h1>
 
     <table>
-    <tr>
-  <th>Customer</th>
-  <th>Product</th>
-  <th>Order Date</th>
-  <th>Delivered Date</th>
-  <th>Brand</th>
-  <th>Category</th>
-  <th>Qty</th>
-  <th>Base</th>
-  <th>Prod Off</th>
-  <th>Cat Off</th>
-  <th>Coupon</th>
-  <th>Final</th>
-</tr>
-
+      <tr>
+        <th>Customer</th>
+        <th>Product</th>
+        <th>Order Date</th>
+        <th>Delivered Date</th>
+        <th>Brand</th>
+        <th>Category</th>
+        <th>Qty</th>
+        <th>Base</th>
+        <th>Applied Offer</th>
+        <th>Final</th>
+      </tr>
       ${tableRows}
     </table>
 
@@ -580,21 +576,38 @@ deliveredDate: order.deliveredAt
     <table>${summaryTable}</table>
 
     <h2>Brand Summary</h2>
-    <table><tr><th>Brand</th><th>Count</th><th>Revenue</th></tr>${buildSummary(brandSummary)}</table>
+    <table>
+      <tr><th>Brand</th><th>Count</th><th>Revenue</th></tr>
+      ${buildSummary(brandSummary)}
+    </table>
 
     <h2>Category Summary</h2>
-    <table><tr><th>Category</th><th>Count</th><th>Revenue</th></tr>${buildSummary(categorySummary)}</table>
+    <table>
+      <tr><th>Category</th><th>Count</th><th>Revenue</th></tr>
+      ${buildSummary(categorySummary)}
+    </table>
 
     <h2>Product Summary</h2>
-    <table><tr><th>Product</th><th>Count</th><th>Revenue</th></tr>${buildSummary(productSummary)}</table>
+    <table>
+      <tr><th>Product</th><th>Count</th><th>Revenue</th></tr>
+      ${buildSummary(productSummary)}
+    </table>
 
     </body>
     </html>`;
-      
-    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox","--disable-setuid-sandbox"] });
+
+    /* ------------------------------
+       7️⃣ GENERATE PDF
+    -------------------------------*/
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
     const page = await browser.newPage();
     await page.setContent(html);
     const pdf = await page.pdf({ format: "A4", printBackground: true });
+
     await browser.close();
 
     res.setHeader("Content-Type", "application/pdf");
@@ -602,7 +615,7 @@ deliveredDate: order.deliveredAt
     res.end(pdf);
 
   } catch (err) {
-    console.error(err);
+    console.error("PDF Error:", err);
     res.status(500).send("PDF generation failed");
   }
 };
@@ -612,7 +625,7 @@ const downloadExcel = async (req, res) => {
     const { day, date, startDate, endDate } = req.query;
 
     /* ------------------------------
-       1️⃣ BUILD FILTER
+       1️⃣ FILTER
     -------------------------------*/
     let filter = { status: "Delivered" };
 
@@ -659,16 +672,11 @@ const downloadExcel = async (req, res) => {
     }
 
     /* ------------------------------
-       2️⃣ FETCH ORDERS
+       2️⃣ FETCH DATA
     -------------------------------*/
     const orders = await Order.find(filter).lean();
-    if (!orders.length) {
-      return res.status(400).send("No sales data found");
-    }
+    if (!orders.length) return res.status(400).send("No sales data found");
 
-    /* ------------------------------
-       3️⃣ PRELOAD CATEGORY OFFERS
-    -------------------------------*/
     const categories = await Category.find().lean();
     const categoryOfferMap = {};
     categories.forEach(c => {
@@ -676,29 +684,57 @@ const downloadExcel = async (req, res) => {
     });
 
     /* ------------------------------
-       4️⃣ ENRICH ORDERS (ITEM LEVEL)
+       3️⃣ PROCESS ORDERS
     -------------------------------*/
     const enrichedOrders = [];
 
+    let totalRevenue = 0;
+    let totalOfferDiscount = 0;
+    let totalCouponDiscount = 0;
+
+    const brandSummary = {};
+    const categorySummary = {};
+    const productSummary = {};
+
     for (const order of orders) {
+
+      const orderCouponDiscount = Number(order.couponDiscount || 0);
+      totalCouponDiscount += orderCouponDiscount;
+
       for (const item of order.product) {
 
         const basePrice = Number(item.regularPrice || item.price || 0);
         const qty = Number(item.quantity || 1);
 
-        const productDiscount = Number(item.productOffer || 0);
-        const categoryOfferPercent = categoryOfferMap[item.category] || 0;
+        let productDiscount = Number(item.productOffer || 0);
+        let categoryDiscount =
+          categoryOfferMap[item.category] || 0;
 
-        const categoryDiscount =
-          ((basePrice - productDiscount) * categoryOfferPercent) / 100;
-
-        const couponDiscount =
-          order.couponDiscount
-            ? order.couponDiscount / order.product.length
-            : 0;
+        /* APPLY HIGHEST OFFER */
+        if (productDiscount > categoryDiscount) {
+          categoryDiscount = 0;
+        } else {
+          productDiscount = 0;
+        }
 
         const finalPrice =
-          (basePrice - productDiscount - categoryDiscount - couponDiscount) * qty;
+          (basePrice - productDiscount - categoryDiscount) * qty;
+
+        totalRevenue += finalPrice;
+        totalOfferDiscount += productDiscount + categoryDiscount;
+
+        /* SUMMARIES */
+        brandSummary[item.brand] ??= { count: 0, revenue: 0 };
+        brandSummary[item.brand].count += qty;
+        brandSummary[item.brand].revenue += finalPrice;
+
+        categorySummary[item.category] ??= { count: 0, revenue: 0 };
+        categorySummary[item.category].count += qty;
+        categorySummary[item.category].revenue += finalPrice;
+
+        productSummary[item.name] ??= { count: 0, revenue: 0 };
+        productSummary[item.name].count += qty;
+        productSummary[item.name].revenue += finalPrice;
 
         enrichedOrders.push({
           customer: order.address?.[0]?.name || "Unknown",
@@ -713,45 +749,15 @@ const downloadExcel = async (req, res) => {
           basePrice,
           productDiscount,
           categoryDiscount,
-          couponDiscount,
           finalPrice
         });
       }
     }
 
-    /* ------------------------------
-       5️⃣ AGGREGATION
-    -------------------------------*/
-    let totalRevenue = 0;
-    let totalProductDiscount = 0;
-    let totalCategoryDiscount = 0;
-    let totalCouponDiscount = 0;
-
-    const brandSummary = {};
-    const categorySummary = {};
-    const productSummary = {};
-
-    enrichedOrders.forEach(o => {
-      totalRevenue += o.finalPrice;
-      totalProductDiscount += o.productDiscount;
-      totalCategoryDiscount += o.categoryDiscount;
-      totalCouponDiscount += o.couponDiscount;
-
-      brandSummary[o.brand] ??= { count: 0, revenue: 0 };
-      brandSummary[o.brand].count++;
-      brandSummary[o.brand].revenue += o.finalPrice;
-
-      categorySummary[o.category] ??= { count: 0, revenue: 0 };
-      categorySummary[o.category].count++;
-      categorySummary[o.category].revenue += o.finalPrice;
-
-      productSummary[o.productName] ??= { count: 0, revenue: 0 };
-      productSummary[o.productName].count++;
-      productSummary[o.productName].revenue += o.finalPrice;
-    });
+    const netRevenue = totalRevenue - totalCouponDiscount;
 
     /* ------------------------------
-       6️⃣ WORKBOOK – SALES SHEET
+       4️⃣ EXCEL FILE
     -------------------------------*/
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Sales Report");
@@ -766,75 +772,21 @@ const downloadExcel = async (req, res) => {
       { header: "Qty", key: "qty", width: 10 },
       { header: "Base Price", key: "basePrice", width: 15 },
       { header: "Product Discount", key: "productDiscount", width: 18 },
-      { header: "Category Discount", key: "categoryDiscount", width: 18 },
-      { header: "Coupon Discount", key: "couponDiscount", width: 18 },
       { header: "Final Price", key: "finalPrice", width: 15 }
     ];
 
     sheet.getRow(1).font = { bold: true };
     enrichedOrders.forEach(o => sheet.addRow(o));
 
-    /* ------------------------------
-       7️⃣ OVERALL SUMMARY
-    -------------------------------*/
+    /* SUMMARY */
     sheet.addRow({});
     sheet.addRow({ customer: "OVERALL SUMMARY" }).font = { bold: true };
     sheet.addRow({ customer: "Total Revenue", productName: totalRevenue });
-    sheet.addRow({ customer: "Product Discount", productName: totalProductDiscount });
-    sheet.addRow({ customer: "Category Discount", productName: totalCategoryDiscount });
     sheet.addRow({ customer: "Coupon Discount", productName: totalCouponDiscount });
-    sheet.addRow({
-      customer: "Net Credited Amount",
-      productName: totalRevenue
-    });
+    sheet.addRow({ customer: "Net Revenue", productName: netRevenue });
 
     /* ------------------------------
-       8️⃣ BRAND SUMMARY SHEET
-    -------------------------------*/
-    const brandSheet = workbook.addWorksheet("Brand Summary");
-    brandSheet.columns = [
-      { header: "Brand", key: "brand", width: 25 },
-      { header: "Sales Count", key: "count", width: 15 },
-      { header: "Revenue", key: "revenue", width: 20 }
-    ];
-    brandSheet.getRow(1).font = { bold: true };
-
-    Object.entries(brandSummary).forEach(([brand, v]) =>
-      brandSheet.addRow({ brand, count: v.count, revenue: v.revenue })
-    );
-
-    /* ------------------------------
-       9️⃣ CATEGORY SUMMARY SHEET
-    -------------------------------*/
-    const categorySheet = workbook.addWorksheet("Category Summary");
-    categorySheet.columns = [
-      { header: "Category", key: "category", width: 25 },
-      { header: "Sales Count", key: "count", width: 15 },
-      { header: "Revenue", key: "revenue", width: 20 }
-    ];
-    categorySheet.getRow(1).font = { bold: true };
-
-    Object.entries(categorySummary).forEach(([category, v]) =>
-      categorySheet.addRow({ category, count: v.count, revenue: v.revenue })
-    );
-
-    /* ------------------------------
-       🔟 PRODUCT SUMMARY SHEET
-    -------------------------------*/
-    const productSheet = workbook.addWorksheet("Product Summary");
-    productSheet.columns = [
-      { header: "Product", key: "product", width: 30 },
-      { header: "Sales Count", key: "count", width: 15 },
-      { header: "Revenue", key: "revenue", width: 20 }
-    ];
-    productSheet.getRow(1).font = { bold: true };
-
-    Object.entries(productSummary).forEach(([product, v]) =>
-      productSheet.addRow({ product, count: v.count, revenue: v.revenue })
-    );
-
-    /* ------------------------------
-       1️⃣1️⃣ SEND FILE
+       SEND FILE
     -------------------------------*/
     res.setHeader(
       "Content-Type",
