@@ -1,0 +1,156 @@
+{
+  "brands": {
+    "cp plus": "CpPlus",
+    "cp-plus": "CpPlus",
+    "cpplus": "CpPlus",
+
+    "hik vision": "Hikvision",
+    "hik-vision": "Hikvision",
+    "hikvision": "Hikvision",
+
+    "prama": "Prama",
+    "dahua": "Dahua",
+    "unv": "UNV",
+    "uniview": "UNV",
+
+    "ezviz": "EZVIZ",
+    "imou": "IMOU",
+    "tp link": "TP-Link",
+    "tplink": "TP-Link",
+    "tp-link": "TP-Link",
+
+    "tenda": "Tenda",
+    "bosch": "Bosch",
+    "axis": "Axis",
+    "sony": "Sony",
+    "panasonic": "Panasonic",
+    "zicom": "Zicom",
+    "vivotek": "Vivotek",
+    "tiandy": "Tiandy"
+  },
+
+  "categories": {
+
+    "security camera": "",
+    "security cameras": "",
+    "camera": "",
+    "cameras": "",
+    "cctv": "",
+    "cctv camera": "",
+    "ip camera": "",
+
+    "bullet": "Bullet",
+    "bullet camera": "Bullet",
+    "bullet cam": "Bullet",
+
+    "bullet ip": "Bullet IP",
+    "bullet ip camera": "Bullet IP",
+    "bullet ip cam": "Bullet IP",
+
+    "dome": "Dome",
+    "dome camera": "Dome",
+    "dome cam": "Dome",
+
+    "dome ip": "Dome IP",
+    "dome ip camera": "Dome IP",
+    "dome ip cam": "Dome IP",
+
+    "pt camera": "PT Camera",
+    "pt cam": "PT Camera",
+    "pt": "PT Camera",
+
+    "ptz": "PTZ Camera",
+    "ptz camera": "PTZ Camera",
+
+    "verifocal": "Verifocal Camera",
+    "varifocal": "Verifocal Camera",
+    "verifocal camera": "Verifocal Camera",
+
+    "wireless camera": "Wireless Camera",
+    "wifi camera": "Wireless Camera",
+
+    "4 ch dvr": "DVR 4 Channel",
+    "4ch dvr": "DVR 4 Channel",
+    "4 channel dvr": "DVR 4 Channel",
+    "dvr 4 channel": "DVR 4 Channel",
+
+    "8 ch dvr": "DVR 8 Channel",
+    "8ch dvr": "DVR 8 Channel",
+    "8 channel dvr": "DVR 8 Channel",
+    "dvr 8 channel": "DVR 8 Channel",
+
+    "16 ch dvr": "DVR 16 Channel",
+    "16ch dvr": "DVR 16 Channel",
+    "16 channel dvr": "DVR 16 Channel",
+    "dvr 16 channel": "DVR 16 Channel",
+
+    "32 ch dvr": "DVR 32 Channel",
+    "32ch dvr": "DVR 32 Channel",
+    "32 channel dvr": "DVR 32 Channel",
+    "dvr 32 channel": "DVR 32 Channel",
+
+    "64 ch dvr": "DVR 64 Channel",
+    "64ch dvr": "DVR 64 Channel",
+    "64 channel dvr": "DVR 64 Channel",
+    "dvr 64 channel": "DVR 64 Channel",
+
+    "4 ch nvr": "NVR 4 Channel",
+    "4ch nvr": "NVR 4 Channel",
+    "4 channel nvr": "NVR 4 Channel",
+    "nvr 4 channel": "NVR 4 Channel",
+
+    "8 ch nvr": "NVR 8 Channel",
+    "8ch nvr": "NVR 8 Channel",
+    "8 channel nvr": "NVR 8 Channel",
+    "nvr 8 channel": "NVR 8 Channel",
+
+    "16 ch nvr": "NVR 16 Channel",
+    "16ch nvr": "NVR 16 Channel",
+    "16 channel nvr": "NVR 16 Channel",
+    "nvr 16 channel": "NVR 16 Channel",
+
+    "32 ch nvr": "NVR 32 Channel",
+    "32ch nvr": "NVR 32 Channel",
+    "32 channel nvr": "NVR 32 Channel",
+    "nvr 32 channel": "NVR 32 Channel",
+
+    "64 ch nvr": "NVR 64 Channel",
+    "64ch nvr": "NVR 64 Channel",
+    "64 channel nvr": "NVR 64 Channel",
+    "nvr 64 channel": "NVR 64 Channel",
+
+    "4ch recorder": "DVR 4 Channel",
+    "8ch recorder": "DVR 8 Channel",
+    "16ch recorder": "DVR 16 Channel",
+    "32ch recorder": "DVR 32 Channel",
+    "64ch recorder": "DVR 64 Channel",
+    
+
+    "network video recorder": "",
+    "digital video recorder": ""
+  },
+
+  "features": {
+    "outdoor": "Outdoor",
+    "indoor": "Indoor",
+
+    "waterproof": "Outdoor",
+    "weatherproof": "Outdoor",
+
+    "night vision": "Night Vision",
+    "full color": "Full Color",
+    "audio": "Audio",
+    "mic": "Built-in Mic",
+    "microphone": "Built-in Mic",
+    "poe": "PoE",
+    "wifi": "WiFi",
+    "wireless": "Wireless",
+    "motion detection": "Motion Detection",
+    "human detection": "Human Detection",
+    "face detection": "Face Detection",
+    "ai": "AI",
+    "color night vision": "Color Night Vision",
+    "2 way audio": "Two Way Audio",
+    "two way audio": "Two Way Audio"
+  }
+}

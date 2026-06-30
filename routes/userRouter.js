@@ -8,7 +8,7 @@ const orderController = require("../controllers/orderContoller")
 const walletController = require("../controllers/walletController")
 const wishlistController = require("../controllers/wishlistController")
 const webhookController = require("../controllers/webhookController")
-
+const chatController = require("../controllers/chatController")
 const multer = require("multer")
 const storage = require("../helpers/multer")
 const upload = multer({ storage: storage })
@@ -95,5 +95,8 @@ Router.get("/deleteWishlist", isLogged, wishlistController.deleteItemWishlist)
 //contact and about us
 Router.get("/contactUs", userController.getContactUsPage)
 Router.get("/aboutUs", userController.getAboutUsPage)
+
+//chat page
+Router.get("/chat",chatController.getChatPage)
 
 module.exports = Router

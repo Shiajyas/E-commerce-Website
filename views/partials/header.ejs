@@ -111,42 +111,53 @@
             <!-- ACTIONS -->
             <div class="header-action d-flex align-items-center">
 
-                    <!-- Wishlist -->
+    <!-- Wishlist -->
+    <a href="/wishlist" class="position-relative icon-wrapper mr-3">
+        <img src="/user-assets/imgs/theme/icons/icon-heart.svg" alt="Wishlist">
+        <% if (locals.wishlistCount > 0) { %>
+            <span id="wishlistBadge" class="badge badge-danger cart-badge">
+                <%= locals.wishlistCount %>
+            </span>
+        <% } %>
+    </a>
 
-                    <!-- Wishlist -->
-<a href="/wishlist" class="position-relative icon-wrapper mr-3">
-    <img src="/user-assets/imgs/theme/icons/icon-heart.svg" alt="Wishlist">
-    <% if (locals.wishlistCount > 0) { %>
-        <span id="wishlistBadge" class="badge badge-danger cart-badge"><%= locals.wishlistCount %></span>
-    <% } %>
-</a>
+    <!-- Cart -->
+    <a href="/cart" class="position-relative icon-wrapper mr-3">
+        <img src="/user-assets/imgs/theme/icons/icon-cart.svg" alt="Cart">
+        <% if (locals.cartCount > 0) { %>
+            <span id="cartBadge" class="badge badge-success cart-badge">
+                <%= locals.cartCount %>
+            </span>
+        <% } %>
+    </a>
 
-<!-- Cart -->
-<a href="/cart" class="position-relative icon-wrapper mr-3">
-    <img src="/user-assets/imgs/theme/icons/icon-cart.svg" alt="Cart">
-    <% if (locals.cartCount > 0) { %>
-        <span id="cartBadge" class="badge badge-success cart-badge"><%= locals.cartCount %></span>
-    <% } %>
-</a>
+    <% if (locals.user) { %>
 
+        <!-- AI Chat -->
+        <a href="/chat" class="position-relative icon-wrapper mr-3" title="AI Assistant">
+            <i class="fas fa-robot ai-chat-icon"></i>
+        </a>
 
-                <!-- User -->
-                <% if (locals.user) { %>
-                    <div class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            <img src="/user-assets/imgs/theme/icons/user-profile.svg" alt="User">
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right">
-                            <a class="dropdown-item" href="/profile">Profile</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item text-danger" href="/logout">Logout</a>
-                        </div>
-                    </div>
-                <% } else { %>
-                    <a href="/login">Sign Up</a>
-                <% } %>
+        <!-- User -->
+        <div class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                <img src="/user-assets/imgs/theme/icons/user-profile.svg" alt="User">
+            </a>
 
+            <div class="dropdown-menu dropdown-menu-right">
+                <a class="dropdown-item" href="/profile">Profile</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item text-danger" href="/logout">Logout</a>
             </div>
+        </div>
+
+    <% } else { %>
+
+        <a href="/login">Sign Up</a>
+
+    <% } %>
+
+</div>
         </div>
     </div>
 </div>

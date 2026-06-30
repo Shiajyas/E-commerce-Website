@@ -1,0 +1,241 @@
+
+
+<%- include("../partials/header") %>
+
+<style>
+.chat-page{
+    max-width:900px;
+    margin:40px auto;
+}
+
+.chat-card{
+    height:80vh;
+    background:#fff;
+    border-radius:15px;
+    overflow:hidden;
+    box-shadow:0 5px 20px rgba(0,0,0,.1);
+    display:flex;
+    flex-direction:column;
+}
+
+.chat-header{
+    background:#28a745;
+    color:#fff;
+    padding:18px 25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.chat-header h4{
+    margin:0;
+    font-weight:600;
+}
+
+.chat-body{
+    flex:1;
+    overflow-y:auto;
+    background:#f8f9fa;
+    padding:20px;
+}
+
+.message{
+    display:flex;
+    margin-bottom:18px;
+}
+
+.message.user{
+    justify-content:flex-end;
+}
+
+.message.bot{
+    justify-content:flex-start;
+}
+
+.message .bubble{
+    max-width:70%;
+    padding:12px 18px;
+    border-radius:15px;
+    word-break:break-word;
+}
+
+.message.user .bubble{
+    background:#28a745;
+    color:#fff;
+}
+
+.message.bot .bubble{
+    background:#fff;
+    border:1px solid #ddd;
+}
+
+.chat-footer{
+    display:flex;
+    padding:15px;
+    border-top:1px solid #ddd;
+    background:#fff;
+}
+
+#message{
+    flex:1;
+    border:1px solid #ccc;
+    border-radius:10px;
+    padding:12px;
+    outline:none;
+}
+
+#sendBtn{
+    margin-left:10px;
+    width:60px;
+    border:none;
+    background:#28a745;
+    color:#fff;
+    border-radius:10px;
+}
+
+#sendBtn:hover{
+    background:#218838;
+}
+
+.typing{
+    color:#777;
+    font-style:italic;
+}
+</style>
+
+<div class="container chat-page">
+
+    <div class="chat-card">
+
+        <div class="chat-header">
+
+            <h4>
+                <i class="fas fa-robot"></i>
+                AI Shopping Assistant
+            </h4>
+
+            <a href="/shop" class="btn btn-light btn-sm">
+                Continue Shopping
+            </a>
+
+        </div>
+
+        <div class="chat-body" id="chatBox">
+
+            <div class="message bot">
+                <div class="bubble">
+
+                    👋 Hello <%= locals.user?.name || "User" %>
+
+                    <br><br>
+
+                    I can help you with:
+
+                    <br>✅ Product Recommendations
+                    <br>✅ Product Comparison
+                    <br>✅ Order Tracking
+                    <br>✅ Return Policy
+                    <br>✅ Shopping Questions
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="chat-footer">
+
+            <input
+                type="text"
+                id="message"
+                placeholder="Ask about products..."
+            >
+
+            <button id="sendBtn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const chatBox=document.getElementById("chatBox");
+const input=document.getElementById("message");
+const sendBtn=document.getElementById("sendBtn");
+
+function addMessage(message,type){
+
+    chatBox.innerHTML+=`
+        <div class="message ${type}">
+            <div class="bubble">
+                ${message}
+            </div>
+        </div>
+    `;
+
+    chatBox.scrollTop=chatBox.scrollHeight;
+
+}
+
+async function sendMessage(){
+
+    const message=input.value.trim();
+
+    if(message==="") return;
+
+    addMessage(message,"user");
+
+    input.value="";
+
+    addMessage("<span class='typing'>AI is typing...</span>","bot");
+
+    try{
+
+        const response=await fetch("/api/chat",{
+
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body:JSON.stringify({
+                message
+            })
+
+        });
+
+        const data=await response.json();
+
+        chatBox.removeChild(chatBox.lastElementChild);
+
+        addMessage(data.answer,"bot");
+
+    }
+    catch(err){
+
+        chatBox.removeChild(chatBox.lastElementChild);
+
+        addMessage("Something went wrong.","bot");
+
+    }
+
+}
+
+sendBtn.addEventListener("click",sendMessage);
+
+input.addEventListener("keypress",function(e){
+
+    if(e.key==="Enter"){
+
+        sendMessage();
+
+    }
+
+});
+
+</script>
+
