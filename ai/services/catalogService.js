@@ -1,5 +1,3 @@
-
-
 const Product = require("../../models/productSchema");
 
 let cache = {
@@ -10,9 +8,11 @@ let cache = {
     lastUpdated: 0
 };
 
-const CACHE_TIME = 10 * 60 * 1000; // 10 minutes
+const CACHE_TIME = 10 * 60 * 1000;
 
-async function loadCatalog() {
+// ----------------------------
+
+async function getCatalog() {
 
     const now = Date.now();
 
@@ -20,16 +20,39 @@ async function loadCatalog() {
         return cache;
     }
 
-    cache.categories = await Product.distinct("category");
-    cache.brands = await Product.distinct("brand");
-    cache.models = await Product.distinct("model");
-    cache.features = await Product.distinct("feature");
+    try {
+        const [categories, brands, models, features] = await Promise.all([
+            Product.distinct("category"),
+            Product.distinct("brand"),
+            Product.distinct("model"),
+            Product.distinct("feature")
+        ]);
 
-    cache.lastUpdated = now;
+        cache = {
+            categories,
+            brands,
+            models,
+            features,
+            lastUpdated: now
+        };
 
-    return cache;
+        if (process.env.DEBUG_CATALOG) {
+            console.log("\n========== CATALOG ==========");
+            console.log("Categories:", categories);
+            console.log("Brands:", brands);
+            console.log("Models:", models);
+            console.log("Features:", features);
+            console.log("=============================\n");
+        }
+
+        return cache;
+
+    } catch (err) {
+        console.error("Catalog fetch failed:", err);
+        return cache;
+    }
 }
 
 module.exports = {
-    loadCatalog
+    getCatalog
 };

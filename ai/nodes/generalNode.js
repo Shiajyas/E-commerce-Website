@@ -1,5 +1,6 @@
+
 // const { llm } = require("../config/gemini");
-const { llm, embeddings } = require("../config/ollama");
+const { llm } = require("../config/ollama");
 
 async function generalNode(state) {
 
@@ -7,7 +8,9 @@ async function generalNode(state) {
 
     return {
 
-        response: result.content
+        ...state,
+
+        answer: result.content
 
     };
 

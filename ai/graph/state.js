@@ -1,5 +1,3 @@
-
-
 const { Annotation } = require("@langchain/langgraph");
 
 const GraphState = Annotation.Root({
@@ -8,13 +6,11 @@ const GraphState = Annotation.Root({
 
     intent: Annotation(),
 
+    filters: Annotation(),
+
     context: Annotation(),
 
-    response: Annotation(),
-
-    userId: Annotation(),
-
-    chatHistory: Annotation()
+    answer: Annotation()
 
 });
 

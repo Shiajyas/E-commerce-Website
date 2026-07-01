@@ -1,89 +1,75 @@
+function escapeRegex(text = "") {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function exact(value) {
+    return {
+        $regex: `^${escapeRegex(value)}$`,
+        $options: "i"
+    };
+}
+
+function contains(value) {
+    return {
+        $regex: escapeRegex(value),
+        $options: "i"
+    };
+}
+
 function buildProductQuery(filters) {
 
     const query = {
-
         isBlocked: false,
-
         quantity: { $gt: 0 }
-
     };
 
+    // Category
     if (filters.category) {
-
-        query.category = {
-
-            $regex: filters.category,
-
-            $options: "i"
-
-        };
-
+        query.category = exact(filters.category);
     }
 
+    // Brand
     if (filters.brand) {
-
-        query.brand = {
-
-            $regex: filters.brand,
-
-            $options: "i"
-
-        };
-
+        query.brand = exact(filters.brand);
     }
 
+    // Model
     if (filters.model) {
-
-        query.model = {
-
-            $regex: filters.model,
-
-            $options: "i"
-
-        };
-
+        query.model = exact(filters.model);
     }
 
+    // Feature
     if (filters.feature) {
-
-        query.feature = {
-
-            $regex: filters.feature,
-
-            $options: "i"
-
-        };
-
+        query.feature = exact(filters.feature);
     }
 
+    // Keyword
     if (filters.keyword) {
 
-        query.productName = {
+        const regex = contains(filters.keyword);
 
-            $regex: filters.keyword,
-
-            $options: "i"
-
-        };
-
+        query.$or = [
+            { productName: regex },
+            { brand: regex },
+            { category: regex },
+            { feature: regex },
+            { model: regex }
+        ];
     }
 
-    if (filters.minPrice || filters.maxPrice) {
+    // Price
+    if (filters.minPrice != null || filters.maxPrice != null) {
 
         query.salePrice = {};
 
-        if (filters.minPrice)
+        if (filters.minPrice != null)
+            query.salePrice.$gte = Number(filters.minPrice);
 
-            query.salePrice.$gte = filters.minPrice;
-
-        if (filters.maxPrice)
-
-            query.salePrice.$lte = filters.maxPrice;
-
+        if (filters.maxPrice != null)
+            query.salePrice.$lte = Number(filters.maxPrice);
     }
 
     return query;
-
 }
 
 module.exports = buildProductQuery;

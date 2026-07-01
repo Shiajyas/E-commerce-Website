@@ -66,8 +66,11 @@
     "varifocal": "Verifocal Camera",
     "verifocal camera": "Verifocal Camera",
 
-    "wireless camera": "Wireless Camera",
-    "wifi camera": "Wireless Camera",
+    "wireless camera": "WiFi Camera",
+    "wifi camera": "WiFi Camera",
+    "wireless cam": "WiFi Camera",
+    "wifi cam": "WiFi Camera",
+
 
     "4 ch dvr": "DVR 4 Channel",
     "4ch dvr": "DVR 4 Channel",

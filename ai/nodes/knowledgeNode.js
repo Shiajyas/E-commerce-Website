@@ -1,13 +1,12 @@
-
-
 async function knowledgeNode(state) {
 
     console.log("Inside Knowledge Node");
 
     return {
-
-        response: "Knowledge Node Executed"
-
+        ...state,
+        intent: "KNOWLEDGE",
+        context: [],
+        answer: "Knowledge node is under development."
     };
 
 }

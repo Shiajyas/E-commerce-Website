@@ -1,71 +1,155 @@
-
 const synonyms = require("../data/synonyms.json");
-const { search } = require("fast-fuzzy");
 
-function bestMatch(value, list) {
-    if (!value) return "";
+// --------------------------------------------------
+// Normalize text
+// --------------------------------------------------
 
-    const results = search(value, list, {
-        returnMatchData: true
-    });
-
-    if (!results.length) return "";
-
-    return results[0].score >= 0.75
-        ? results[0].item
-        : "";
+function normalize(text = "") {
+    return String(text)
+        .toLowerCase()
+        .replace(/[-_]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 }
 
-function detectBySynonym(question, map) {
+// --------------------------------------------------
+// Escape regex
+// --------------------------------------------------
 
-    const text = question.toLowerCase();
+function escapeRegex(str = "") {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
-    let longest = "";
+// --------------------------------------------------
+// Direct Catalog Match
+// --------------------------------------------------
 
-    for (const key of Object.keys(map)) {
+function detectDirect(question, catalogList = []) {
 
-        if (text.includes(key.toLowerCase())) {
+    const text = normalize(question);
 
-            if (key.length > longest.length)
-                longest = key;
+    const items = [...catalogList].sort(
+        (a, b) => b.length - a.length
+    );
+
+    for (const item of items) {
+
+        const regex = new RegExp(
+            `\\b${escapeRegex(normalize(item))}\\b`,
+            "i"
+        );
+
+        if (regex.test(text)) {
+            return item;
         }
+
     }
 
-    if (!longest) return "";
+    return null;
 
-    return map[longest];
 }
 
-function detectBrand(question, catalog){
+// --------------------------------------------------
+// Synonym Match
+// (DO NOT depend on catalog)
+// --------------------------------------------------
 
-    const synonym = detectBySynonym(question, synonyms.brands);
+function detectBySynonym(question, synonymMap = {}) {
 
-    if(synonym) return synonym;
+    const text = normalize(question);
 
-    return bestMatch(question, catalog.brands);
+    const entries = Object.entries(synonymMap).sort(
+        (a, b) => b[0].length - a[0].length
+    );
+
+    for (const [key, value] of entries) {
+
+        const regex = new RegExp(
+            `\\b${escapeRegex(normalize(key))}\\b`,
+            "i"
+        );
+
+        if (!regex.test(text)) {
+            continue;
+        }
+
+        // Ignore generic words like "camera"
+        if (!value) {
+            continue;
+        }
+
+        // Return normalized synonym value.
+        return value;
+
+    }
+
+    return null;
+
 }
 
-function detectCategory(question,catalog){
+// --------------------------------------------------
+// Brand
+// --------------------------------------------------
 
-    const synonym = detectBySynonym(question, synonyms.categories);
+function detectBrand(question, catalog) {
 
-    if(synonym) return synonym;
+    return (
+        detectDirect(question, catalog.brands) ||
+        detectBySynonym(question, synonyms.brands)
+    );
 
-    return bestMatch(question,catalog.categories);
 }
 
-function detectFeature(question,catalog){
+// --------------------------------------------------
+// Category
+// --------------------------------------------------
 
-    const synonym = detectBySynonym(question,synonyms.features);
+function detectCategory(question, catalog) {
 
-    if(synonym) return synonym;
+    return (
+        detectDirect(question, catalog.categories) ||
+        detectBySynonym(question, synonyms.categories)
+    );
 
-    return bestMatch(question,catalog.features);
+}
+
+// --------------------------------------------------
+// Feature
+// --------------------------------------------------
+
+function detectFeature(question, catalog) {
+
+    return (
+        detectDirect(question, catalog.features) ||
+        detectBySynonym(question, synonyms.features)
+    );
+
+}
+
+// --------------------------------------------------
+// Extract All
+// --------------------------------------------------
+
+function extractAll(question, catalog) {
+
+    const brand = detectBrand(question, catalog);
+
+    const category = detectCategory(question, catalog);
+
+    const feature = detectFeature(question, catalog);
+
+    return {
+        brand,
+        category,
+        feature,
+        hasSignal: !!(brand || category || feature)
+    };
+
 }
 
 module.exports = {
     detectBrand,
     detectCategory,
     detectFeature,
-    bestMatch
+    extractAll
 };
