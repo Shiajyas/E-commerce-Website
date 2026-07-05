@@ -3,55 +3,76 @@ const path = require("path");
 
 const { PDFLoader } = require("@langchain/community/document_loaders/fs/pdf");
 
-const KNOWLEDGE_FOLDER = path.join(process.cwd(), "knowledge", "documents");
+const KNOWLEDGE_FOLDER = path.join(__dirname, "..", "documents");
 
-async function loadPDFDocuments() {
-
-    const documents = [];
+async function loadDocuments() {
 
     if (!fs.existsSync(KNOWLEDGE_FOLDER)) {
-
         console.log("Knowledge folder not found.");
-
-        return documents;
-
+        return [];
     }
 
     const files = fs.readdirSync(KNOWLEDGE_FOLDER);
 
-    const pdfFiles = files.filter(file =>
-        file.toLowerCase().endsWith(".pdf")
-    );
+    const allDocs = [];
 
-    for (const file of pdfFiles) {
+    for (const file of files) {
 
-        console.log(`Loading ${file}`);
+        const fullPath = path.join(KNOWLEDGE_FOLDER, file);
 
-        const loader = new PDFLoader(
-            path.join(KNOWLEDGE_FOLDER, file)
-        );
+        const ext = path.extname(file).toLowerCase();
 
-        const docs = await loader.load();
+        //--------------------------------
+        // PDF
+        //--------------------------------
 
-        docs.forEach(doc => {
+        if (ext === ".pdf") {
 
-            doc.metadata = {
-                ...doc.metadata,
-                source: file
-            };
+            console.log("Loading:", file);
 
-        });
+            const loader = new PDFLoader(fullPath);
 
-        documents.push(...docs);
+            const docs = await loader.load();
 
+            docs.forEach(doc => {
+                doc.metadata.source = file;
+            });
+
+            console.log(`Loaded ${docs.length} pages`);
+
+            allDocs.push(...docs);
+        }
+
+        //--------------------------------
+        // TXT / MD
+        //--------------------------------
+
+        else if (ext === ".txt" || ext === ".md") {
+
+            console.log("Loading:", file);
+
+            const content = fs.readFileSync(fullPath, "utf8");
+
+            allDocs.push({
+                pageContent: content,
+                metadata: {
+                    source: file,
+                    page: 1
+                }
+            });
+
+            console.log("Loaded text file");
+        }
     }
 
-    console.log(`Loaded ${documents.length} pages`);
+    console.log("--------------------------------");
+    console.log("Knowledge Files :", files.length);
+    console.log("Loaded Docs     :", allDocs.length);
+    console.log("--------------------------------");
 
-    return documents;
-
+    return allDocs;
 }
 
 module.exports = {
-    loadPDFDocuments
+    loadDocuments
 };

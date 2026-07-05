@@ -23,27 +23,33 @@
 //     embedText,
 // };
 
-const { GoogleGenAI } = require("@google/genai");
+const ollama = require("ollama").default;
 require("dotenv").config();
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-});
+ollama.config.host = process.env.OLLAMA_URL;
 
 async function embedText(text) {
+
     try {
-        const response = await ai.models.embedContent({
-            model: process.env.GEMINI_EMBEDDING_MODEL,
-            contents: text,
+
+        const response = await ollama.embed({
+
+            model: process.env.EMBEDDING_MODEL,
+
+            input: text
+
         });
 
-        return response.embeddings[0].values;
-    } catch (error) {
-        console.error("Embedding Error:", error.message);
-        throw error;
+        return response.embeddings[0];
+
+    } catch (err) {
+
+        console.error(err);
+
+        throw err;
+
     }
+
 }
 
-module.exports = {
-    embedText,
-};
+module.exports = { embedText };

@@ -1,0 +1,369 @@
+
+========================================
+CCTV KNOWLEDGE BASE
+========================================
+
+========================
+GENERAL
+========================
+
+What is CCTV?
+
+CCTV stands for Closed-Circuit Television.
+It is a surveillance system used to monitor homes, offices, shops, warehouses, schools, hospitals, banks, and public places.
+
+========================
+CAMERAS
+========================
+
+What is a Bullet Camera?
+
+A Bullet Camera is a long cylindrical camera mainly used for outdoor surveillance.
+It usually provides longer viewing distance and weather protection.
+
+What is a Dome Camera?
+
+A Dome Camera has a dome-shaped housing.
+It is commonly used indoors because it is compact and difficult to identify its viewing direction.
+
+What is an IP Camera?
+
+An IP Camera captures video digitally and transmits it through a computer network using an IP address.
+
+What is an Analog Camera?
+
+An Analog Camera sends video through coaxial cable to a DVR.
+
+========================
+NVR
+========================
+
+What is NVR?
+
+NVR stands for Network Video Recorder.
+
+An NVR records video from IP cameras over a network.
+
+NVR does not require direct video cable connections like DVR.
+
+Advantages of NVR
+
+- Better image quality
+- Easy remote access
+- Supports PoE
+- Easy camera expansion
+
+========================
+DVR
+========================
+
+What is DVR?
+
+DVR stands for Digital Video Recorder.
+
+A DVR records video from Analog Cameras.
+
+Video signals are transmitted through coaxial cables.
+
+Advantages
+
+- Lower installation cost
+- Suitable for existing analog systems
+
+========================
+NVR VS DVR
+========================
+
+Difference between DVR and NVR
+
+DVR works with Analog Cameras.
+
+NVR works with IP Cameras.
+
+DVR uses coaxial cables.
+
+NVR uses Ethernet network cables.
+
+NVR usually supports higher resolution cameras.
+
+========================
+POE
+========================
+
+What is PoE?
+
+PoE stands for Power over Ethernet.
+
+PoE allows both power and data to travel through one Ethernet cable.
+
+Advantages
+
+- Fewer cables
+- Easy installation
+- Lower installation cost
+- Cleaner wiring
+
+========================
+RESOLUTION
+========================
+
+What is 2MP Camera?
+
+A 2MP camera captures approximately 1920 × 1080 resolution.
+
+It is commonly known as Full HD.
+
+What is 4MP Camera?
+
+A 4MP camera provides better image quality than 2MP.
+
+What is 8MP Camera?
+
+An 8MP camera is also called 4K CCTV Camera.
+
+========================
+LENS
+========================
+
+What is Fixed Lens?
+
+A Fixed Lens provides one viewing angle.
+
+What is Varifocal Lens?
+
+A Varifocal Lens allows manual zoom adjustment.
+
+========================
+NIGHT VISION
+========================
+
+What is Infrared?
+
+Infrared LEDs allow cameras to capture images in darkness.
+
+What is Color Night Vision?
+
+Color Night Vision allows full-color recording even in low light.
+
+========================
+AI FEATURES
+========================
+
+What is Motion Detection?
+
+Motion Detection starts recording whenever movement is detected.
+
+What is Human Detection?
+
+Human Detection identifies people while reducing false alarms.
+
+What is Vehicle Detection?
+
+Vehicle Detection recognizes moving vehicles.
+
+What is Face Detection?
+
+Face Detection automatically detects human faces.
+
+========================
+VIDEO
+========================
+
+What is H.264?
+
+H.264 is a video compression standard.
+
+What is H.265?
+
+H.265 provides better compression than H.264 while maintaining video quality.
+
+========================
+NETWORK
+========================
+
+Default IP Address
+
+Most CCTV devices use
+
+192.168.1.64
+
+or
+
+192.168.1.108
+
+depending on manufacturer.
+
+========================
+STORAGE
+========================
+
+How long can CCTV footage be stored?
+
+Storage depends on
+
+- Hard Disk Size
+- Camera Resolution
+- Frame Rate
+- Number of Cameras
+- Recording Mode
+
+A 1TB hard disk generally stores 10 to 20 days of footage for four Full HD cameras.
+
+========================
+INSTALLATION
+========================
+
+How to install CCTV Camera?
+
+Step 1
+
+Choose the installation location.
+
+Step 2
+
+Mount the camera.
+
+Step 3
+
+Connect power.
+
+Step 4
+
+Connect Ethernet cable or coaxial cable.
+
+Step 5
+
+Connect DVR or NVR.
+
+Step 6
+
+Configure network settings.
+
+Step 7
+
+Add camera to DVR or NVR.
+
+Step 8
+
+Test live video.
+
+========================
+RESET
+========================
+
+How to reset a CCTV Camera?
+
+Press and hold the reset button for about 10 to 15 seconds.
+
+Wait for the device to reboot.
+
+========================
+TROUBLESHOOTING
+========================
+
+Camera not showing video
+
+Possible reasons
+
+- No power
+- Loose cable
+- Wrong IP address
+- Camera disabled
+- Network issue
+
+No Night Vision
+
+Possible reasons
+
+- Infrared disabled
+- Dirty lens
+- Hardware failure
+
+Cannot access camera remotely
+
+Check
+
+- Internet connection
+- Port forwarding
+- DDNS
+- Hik-Connect
+- Correct login credentials
+
+========================
+HIKVISION
+========================
+
+What is Hik-Connect?
+
+Hik-Connect is Hikvision's cloud platform.
+
+It allows users to access cameras remotely using a mobile phone or web browser.
+
+========================
+CP PLUS
+========================
+
+CP Plus provides
+
+- Analog Cameras
+- IP Cameras
+- DVR
+- NVR
+- Video Door Phones
+- Smart Security Solutions
+
+========================
+MAINTENANCE
+========================
+
+How often should CCTV cameras be cleaned?
+
+Clean the camera lens every three months.
+
+Inspect cables every six months.
+
+Check hard disk health once a year.
+
+========================
+FAQ
+========================
+
+Can CCTV work without Internet?
+
+Yes.
+
+Internet is only required for remote viewing.
+
+Can CCTV work during power failure?
+
+Only if connected to UPS or backup power.
+
+Can I view CCTV on my mobile?
+
+Yes.
+
+Using applications like Hik-Connect or CP Plus mobile app.
+
+Can one NVR support multiple cameras?
+
+Yes.
+
+Depending on model, an NVR may support 4, 8, 16, 32 or more cameras.
+
+How many cameras can a DVR support?
+
+Common DVR models support
+
+4
+
+8
+
+16
+
+32
+
+or 64 cameras.
+
+========================================
+END OF DOCUMENT
+========================================

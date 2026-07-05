@@ -22,11 +22,11 @@ function routerNode(state) {
     console.log("QUESTION:", state.question);
 
     // ====================================================
-    // 1. ANALYTICS
+    // 1. ANALYTICS (Highest Priority)
     // ====================================================
 
     if (
-        /\b(how many|count|total|average|avg|stock|available|max|min|highest|lowest|most expensive|cheapest)\b/.test(q)
+        /\b(how many|count|total|average|avg|stock|available|max|min|highest|lowest)\b/.test(q)
     ) {
 
         console.log("ROUTE -> ANALYTICS");
@@ -43,147 +43,118 @@ function routerNode(state) {
     // ====================================================
 
     if (
-
-        /\b(order|orders)\b/.test(q)
-
-        ||
-
-        /\b(track|tracking|status|shipping|delivery|delivered|dispatch|dispatched|shipped)\b/.test(q)
-
-        ||
-
-        /\b(cancel|refund|return|replace|exchange)\b/.test(q)
-
-        ||
-
-        /\b(my purchase|purchase history|my purchases|recent purchase|latest order)\b/.test(q)
-
+        /\b(order|orders|track|tracking|delivery|shipping|refund|return|cancel|payment|purchase)\b/.test(q)
     ) {
 
         console.log("ROUTE -> ORDER");
 
         return {
-
             ...state,
-
             intent: "ORDER"
-
         };
 
     }
 
     // ====================================================
-    // 3. PRODUCT RECOMMENDATION
+    // 3. ACCOUNT
     // ====================================================
 
     if (
-
-        /\b(best|recommend|suggest|which|good for|suitable|ideal)\b/.test(q)
-
-        ||
-
-        /\b(for home|for office|for shop|for warehouse|for hospital|for school|for parking|for apartment|for factory|for farm)\b/.test(q)
-
-    ) {
-
-        console.log("ROUTE -> PRODUCT_RECOMMENDATION");
-
-        return {
-
-            ...state,
-
-            intent: "PRODUCT_RECOMMENDATION"
-
-        };
-
-    }
-
-    // ====================================================
-    // 4. PRODUCT
-    // ====================================================
-
-    if (
-
-        /\b(show|find|search|buy|get|list|display)\b/.test(q)
-
-        ||
-
-        /\b(camera|cameras|bullet|dome|ptz|wireless|wifi|ip camera|dvr|nvr|recorder|hikvision|cpplus|prama|dahua)\b/.test(q)
-
-    ) {
-
-        console.log("ROUTE -> PRODUCT");
-
-        return {
-
-            ...state,
-
-            intent: "PRODUCT"
-
-        };
-
-    }
-
-    // ====================================================
-    // 5. ACCOUNT
-    // ====================================================
-
-    if (
-
-        /\b(login|logout|register|signup|sign up|forgot password|reset password|profile|account|change password)\b/.test(q)
-
+        /\b(login|logout|register|signup|sign up|profile|account|change password|forgot password)\b/.test(q)
     ) {
 
         console.log("ROUTE -> ACCOUNT");
 
         return {
-
             ...state,
-
             intent: "ACCOUNT"
-
         };
 
     }
 
     // ====================================================
-    // 6. KNOWLEDGE
+    // 4. KNOWLEDGE
     // ====================================================
 
     if (
 
-        q.startsWith("what is")
+        q.startsWith("what is") ||
 
-        ||
+        q.startsWith("what are") ||
 
-        q.startsWith("how does")
+        q.startsWith("how does") ||
 
-        ||
+        q.startsWith("how do") ||
 
-        q.startsWith("why")
+        q.startsWith("how to") ||
 
-        ||
+        q.startsWith("why") ||
 
-        q.startsWith("when")
+        q.startsWith("when") ||
 
-        ||
+        q.startsWith("where") ||
 
-        q.includes("difference")
+        q.includes("difference") ||
 
-        ||
+        q.includes("meaning") ||
 
-        q.includes("meaning")
+        q.includes("define") ||
+
+        q.includes("explain")
 
     ) {
 
         console.log("ROUTE -> KNOWLEDGE");
 
         return {
-
             ...state,
-
             intent: "KNOWLEDGE"
+        };
 
+    }
+
+    // ====================================================
+    // 5. PRODUCT RECOMMENDATION
+    // ====================================================
+
+    if (
+
+        /\b(best|recommend|suggest|which|good|suitable|ideal)\b/.test(q)
+
+        ||
+
+        /\b(for home|for office|for shop|for warehouse|for hospital|for school|for outdoor|for indoor|for apartment|for parking)\b/.test(q)
+
+    ) {
+
+        console.log("ROUTE -> PRODUCT_RECOMMENDATION");
+
+        return {
+            ...state,
+            intent: "PRODUCT_RECOMMENDATION"
+        };
+
+    }
+
+    // ====================================================
+    // 6. PRODUCT SEARCH
+    // ====================================================
+
+    if (
+
+        /\b(show|find|search|buy|get|list|display|available)\b/.test(q)
+
+        ||
+
+        /\b(camera|cameras|bullet|dome|wifi|wireless|hikvision|cpplus|cp plus|nvr|dvr|ip camera|2mp|4mp|5mp|8mp|poe)\b/.test(q)
+
+    ) {
+
+        console.log("ROUTE -> PRODUCT");
+
+        return {
+            ...state,
+            intent: "PRODUCT"
         };
 
     }
@@ -195,11 +166,8 @@ function routerNode(state) {
     console.log("ROUTE -> GENERAL");
 
     return {
-
         ...state,
-
         intent: "GENERAL"
-
     };
 
 }
