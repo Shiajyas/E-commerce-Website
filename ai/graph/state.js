@@ -2,29 +2,81 @@ const { Annotation } = require("@langchain/langgraph");
 
 const GraphState = Annotation.Root({
 
-    // User message
+    // =====================================================
+    // CORE INPUT
+    // =====================================================
+
     question: Annotation(),
+    rewrittenQuestion: Annotation(),
 
-    // Logged-in user
+    // =====================================================
+    // USER + SESSION
+    // =====================================================
+
     userId: Annotation(),
-
-    // Session / conversation
     sessionId: Annotation(),
 
-    // Router intent
-    intent: Annotation(),
+    // =====================================================
+    // CONVERSATION HISTORY
+    // =====================================================
 
-    // Extracted filters
+    chatHistory: Annotation(),
+
+    // =====================================================
+    // ROUTING
+    // =====================================================
+
+    intent: Annotation(),
+    previousIntent: Annotation(),
+
+    // 👇 ADD THIS
+    selectedProduct: Annotation(),
+
+    // =====================================================
+    // TEMP FILTERS
+    // =====================================================
+
     filters: Annotation(),
 
-    // Products / Orders / Docs
-    context: Annotation(),
+    // =====================================================
+    // DOMAIN MEMORY
+    // =====================================================
 
-    // Final answer
-    answer: Annotation(),
+    memory: Annotation({
+        defaultValue: () => ({
+            lastIntent: null,
 
-    // Optional conversation history
-    history: Annotation()
+            product: {
+                filters: {},
+                products: []
+            },
+
+            recommendation: {
+                filters: {},
+                products: []
+            },
+
+            order: {
+                filters: {},
+                orders: []
+            },
+
+            knowledge: {
+                docs: []
+            },
+
+            analytics: {
+                result: null
+            }
+
+        })
+    }),
+
+    // =====================================================
+    // FINAL RESPONSE
+    // =====================================================
+
+    answer: Annotation()
 
 });
 

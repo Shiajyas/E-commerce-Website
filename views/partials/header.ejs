@@ -131,12 +131,11 @@
         <% } %>
     </a>
 
-    <% if (locals.user) { %>
-
-        <!-- AI Chat -->
-        <a href="/chat" class="position-relative icon-wrapper mr-3" title="AI Assistant">
+          <a href="/chat" class="position-relative icon-wrapper mr-3" title="AI Assistant">
             <i class="fas fa-robot ai-chat-icon"></i>
         </a>
+
+    <% if (locals.user) { %> 
 
         <!-- User -->
         <div class="dropdown">

@@ -5,7 +5,7 @@ async function accountNode(state) {
     return {
         ...state,
         intent: "ACCOUNT",
-        context: [],
+        memory: [],
         answer: "Account node is under development."
     };
 

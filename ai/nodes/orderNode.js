@@ -1,159 +1,199 @@
-
 const {
     extractOrder
-} = require("../extractors/orderExtractor")
+} = require("../extractors/orderExtractor");
 
 const {
-
     findLatestOrder,
-
     findAllOrders,
-
     findOrdersByStatus,
-
     findOrdersByProduct,
-
     findCancelledOrders,
-
     findDeliveredOrders,
-
     findPendingOrders
-
 } = require("../repositories/orderRepository");
 
 const orderResponse =
-require("../services/orderResponse");
+    require("../services/orderResponse");
+
+const contextManager =
+    require("../memory/context/contextManager");
 
 async function orderNode(state) {
 
     console.log("========================================");
-    console.log("Inside Order Node");
+    console.log("Inside Order Node (CONTEXT AWARE)");
 
-    //----------------------------------
-    // User Id
-    //----------------------------------
+    // =====================================================
+    // 1. USER CHECK
+    // =====================================================
 
-    const userId = state.userId;
-
-    if (!userId) {
+    if (!state.userId) {
 
         return {
-
             ...state,
-
             intent: "ORDER",
-
-            context: [],
-
             answer: "Please login to view your orders."
-
         };
 
     }
 
-    //----------------------------------
-    // Extract
-    //----------------------------------
+    // =====================================================
+    // 2. LOAD CONTEXT
+    // =====================================================
 
-    const filters =
+    const memory = state.memory || {};
+
+    const previousOrders =
+        memory.order?.orders || [];
+
+    const previousFilters =
+        memory.order?.filters || {};
+
+        const question =
+    (
+        state.rewrittenQuestion ||
+        state.question ||
+        ""
+    );
+
+const lowerQuestion =
+    question.toLowerCase();
+
+    // =====================================================
+    // 3. FOLLOW-UP DETECTION
+    // =====================================================
+
+    const isFollowUp =
+        previousOrders.length > 0 &&
+        /(that|this|last|previous|it|status|update|track|same)/i.test(question);
+
+    // =====================================================
+    // 4. EXTRACT CURRENT FILTERS
+    // =====================================================
+
+    const currentFilters =
         await extractOrder(state.question);
 
-    console.log("Order Filters");
+    console.log("Current Filters:", currentFilters);
+    console.log("Previous Filters:", previousFilters);
 
-    console.log(filters);
+    // =====================================================
+    // 5. MERGE FILTERS
+    // =====================================================
 
-    //----------------------------------
-    // Repository
-    //----------------------------------
+    const mergedFilters =
+        contextManager.mergeFilters(
+            previousFilters,
+            currentFilters
+        );
+
+    console.log("Merged Filters:", mergedFilters);
 
     let orders = [];
 
-    switch (filters.action) {
+    // =====================================================
+    // 6. FOLLOW-UP (NO DB CALL)
+    // =====================================================
 
-        case "track":
+    if (isFollowUp) {
 
-            if (filters.product) {
+        console.log("Using Previous Orders From Context");
+
+        orders = [...previousOrders];
+
+        if (mergedFilters.status) {
+
+            orders = orders.filter(order =>
+                order.status &&
+                order.status.toLowerCase() ===
+                mergedFilters.status.toLowerCase()
+            );
+
+        }
+
+    } else {
+
+        // =====================================================
+        // 7. DATABASE FLOW
+        // =====================================================
+
+        switch (mergedFilters.action) {
+
+            case "track":
+
+                if (mergedFilters.product) {
+
+                    orders =
+                        await findOrdersByProduct(
+                            state.userId,
+                            mergedFilters.product
+                        );
+
+                } else {
+
+                    const latest =
+                        await findLatestOrder(state.userId);
+
+                    orders = latest ? [latest] : [];
+
+                }
+
+                break;
+
+            case "history":
 
                 orders =
-                    await findOrdersByProduct(
-                        userId,
-                        filters.product
+                    await findAllOrders(state.userId);
+
+                break;
+
+            case "cancel":
+
+                orders =
+                    await findCancelledOrders(state.userId);
+
+                break;
+
+            case "delivery":
+
+                orders =
+                    await findDeliveredOrders(state.userId);
+
+                break;
+
+            case "pending":
+
+                orders =
+                    await findPendingOrders(state.userId);
+
+                break;
+
+            case "status":
+
+                orders =
+                    await findOrdersByStatus(
+                        state.userId,
+                        mergedFilters.status
                     );
 
-            }
+                break;
 
-            else {
+            default:
 
                 const latest =
-                    await findLatestOrder(userId);
+                    await findLatestOrder(state.userId);
 
-                if (latest)
-                    orders = [latest];
+                orders = latest ? [latest] : [];
 
-            }
-
-            break;
-
-        case "history":
-
-            orders =
-                await findAllOrders(userId);
-
-            break;
-
-        case "cancel":
-
-            orders =
-                await findCancelledOrders(userId);
-
-            break;
-
-        case "delivery":
-
-            orders =
-                await findDeliveredOrders(userId);
-
-            break;
-
-        case "payment":
-
-            orders =
-                await findAllOrders(userId);
-
-            break;
-
-        default:
-
-            orders =
-                await findLatestOrder(userId);
-
-            if (orders)
-                orders = [orders];
-            else
-                orders = [];
+        }
 
     }
 
-    //----------------------------------
-    // Status Filter
-    //----------------------------------
+    console.log("Orders Found:", orders.length);
 
-    if (filters.status) {
-
-        orders = orders.filter(order =>
-
-            order.status.toLowerCase() ===
-            filters.status.toLowerCase()
-
-        );
-
-    }
-
-    console.log("Orders Found :", orders.length);
-
-    //----------------------------------
-    // Response
-    //----------------------------------
+    // =====================================================
+    // 8. GENERATE RESPONSE
+    // =====================================================
 
     const answer =
         await orderResponse(
@@ -161,13 +201,31 @@ async function orderNode(state) {
             orders
         );
 
+    // =====================================================
+    // 9. SAVE CONTEXT
+    // =====================================================
+
     return {
 
         ...state,
 
         intent: "ORDER",
 
-        context: orders,
+        memory: {
+
+            ...memory,
+
+            lastIntent: "ORDER",
+
+            order: {
+
+                filters: mergedFilters,
+
+                orders
+
+            }
+
+        },
 
         answer
 

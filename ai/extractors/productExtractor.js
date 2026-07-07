@@ -26,9 +26,9 @@ async function extractProductFilter(question) {
 
     console.log("Categories:", catalog.categories);
 
-    // -------------------------------------
-    // Rule-based detection (high confidence)
-    // -------------------------------------
+    // =====================================================
+    // Rule-based Detection (Highest Priority)
+    // =====================================================
 
     const detectedBrand = detectBrand(normalized, catalog);
     const detectedCategory = detectCategory(normalized, catalog);
@@ -38,108 +38,159 @@ async function extractProductFilter(question) {
     console.log("Detected Category:", detectedCategory);
     console.log("Detected Feature:", detectedFeature);
 
-    // -------------------------------------
-    // Base filters (IMPORTANT FIX)
-    // -------------------------------------
-
     let filters = {
+
         brand: detectedBrand || "",
+
         category: detectedCategory || "",
+
         feature: detectedFeature || "",
+
         model: "",
+
         keyword: "",
+
         minPrice: null,
+
         maxPrice: null
+
     };
 
-    // -------------------------------------
-    // LLM fallback ONLY if needed
-    // -------------------------------------
+    // =====================================================
+    // Rule-based Price Extraction
+    // =====================================================
+
+    let match;
+
+    match = normalized.match(/under\s+(\d+)/i);
+    if (match) filters.maxPrice = Number(match[1]);
+
+    match = normalized.match(/below\s+(\d+)/i);
+    if (match) filters.maxPrice = Number(match[1]);
+
+    match = normalized.match(/above\s+(\d+)/i);
+    if (match) filters.minPrice = Number(match[1]);
+
+    match = normalized.match(/over\s+(\d+)/i);
+    if (match) filters.minPrice = Number(match[1]);
+
+    match = normalized.match(/between\s+(\d+)\s+and\s+(\d+)/i);
+
+    if (match) {
+
+        filters.minPrice = Number(match[1]);
+        filters.maxPrice = Number(match[2]);
+
+    }
+
+    // =====================================================
+    // LLM Fallback
+    // Only when rule engine couldn't understand enough
+    // =====================================================
+
+    const hasRuleSignals =
+        filters.brand ||
+        filters.category ||
+        filters.feature;
 
     const needLLM =
-        !filters.brand ||
-        !filters.category ||
-        !filters.feature;
+        !hasRuleSignals ||
+        normalized.length > 30;
 
     if (needLLM) {
 
         console.log(">>> PRODUCT EXTRACTOR (LLM)");
 
-        const response = await llm.invoke([
-            new SystemMessage(productPrompt(normalized, catalog)),
-            new HumanMessage(normalized)
-        ]);
+        try {
 
-        const aiFilters = parseJson(response.content);
+            const response = await llm.invoke([
+                new SystemMessage(
+                    productPrompt(normalized, catalog)
+                ),
+                new HumanMessage(normalized)
+            ]);
 
-        filters.brand = filters.brand || aiFilters.brand || "";
-        filters.category = filters.category || aiFilters.category || "";
-        filters.feature = filters.feature || aiFilters.feature || "";
-        filters.model = aiFilters.model || "";
-        filters.keyword = aiFilters.keyword || "";
-        filters.minPrice = aiFilters.minPrice ?? null;
-        filters.maxPrice = aiFilters.maxPrice ?? null;
+            const aiFilters =
+                parseJson(response.content) || {};
+
+            filters.brand =
+                filters.brand || aiFilters.brand || "";
+
+            filters.category =
+                filters.category || aiFilters.category || "";
+
+            filters.feature =
+                filters.feature || aiFilters.feature || "";
+
+            filters.model =
+                aiFilters.model || "";
+
+            filters.keyword =
+                aiFilters.keyword || "";
+
+            if (!filters.minPrice)
+                filters.minPrice =
+                    aiFilters.minPrice ?? null;
+
+            if (!filters.maxPrice)
+                filters.maxPrice =
+                    aiFilters.maxPrice ?? null;
+
+        } catch (err) {
+
+            console.log("LLM extraction skipped.");
+
+        }
+
     }
 
-    // -------------------------------------
-    // PRICE EXTRACTION (RULE BASED)
-    // -------------------------------------
+    // =====================================================
+    // Keyword Fallback
+    // Only when absolutely nothing useful exists
+    // =====================================================
 
-    const under = normalized.match(/under\s+(\d+)/i);
-    if (under) filters.maxPrice = Number(under[1]);
-
-    const below = normalized.match(/below\s+(\d+)/i);
-    if (below) filters.maxPrice = Number(below[1]);
-
-    const above = normalized.match(/above\s+(\d+)/i);
-    if (above) filters.minPrice = Number(above[1]);
-
-    const over = normalized.match(/over\s+(\d+)/i);
-    if (over) filters.minPrice = Number(over[1]);
-
-    const between = normalized.match(/between\s+(\d+)\s+and\s+(\d+)/i);
-    if (between) {
-        filters.minPrice = Number(between[1]);
-        filters.maxPrice = Number(between[2]);
-    }
-
-    // -------------------------------------
-    // KEYWORD FALLBACK (OPTION 1 FIX CORE)
-    // -------------------------------------
-
-    const hasMeaningfulFilters =
+    const hasStructuredFilters =
         filters.brand ||
         filters.category ||
         filters.feature ||
         filters.model;
 
-    if (!hasMeaningfulFilters) {
-
-        // IMPORTANT:
-        // preserve intent when DB has no category match
+    if (!hasStructuredFilters) {
 
         filters.keyword = normalized
-            .replace(/\b(show|me|find|search|buy|need|want|camera|cameras|security)\b/g, "")
+            .replace(
+                /\b(show|me|find|search|buy|need|want|looking|for|camera|cameras|security|system|it|this|that|also|should|have|with|which|one|please)\b/gi,
+                " "
+            )
+            .replace(/\s+/g, " ")
             .trim();
 
-        // special case: wifi
-        if (normalized.includes("wifi")) {
-            filters.keyword = filters.keyword
-                ? `${filters.keyword} wifi`
-                : "wifi";
-        }
     }
 
-    // -------------------------------------
-    // FINAL VALIDATION (NON-DESTRUCTIVE)
-    // -------------------------------------
+    // If feature exists,
+    // never keep duplicate keyword.
 
-    filters = validateFilters(filters, catalog, normalized);
+    if (filters.feature) {
+
+        filters.keyword = "";
+
+    }
+
+    // =====================================================
+    // Validation
+    // =====================================================
+
+    filters = validateFilters(
+        filters,
+        catalog,
+        normalized
+    );
 
     console.log("\nSTEP 2: Final Filters");
     console.log(filters);
 
     return filters;
+
 }
 
 module.exports = {

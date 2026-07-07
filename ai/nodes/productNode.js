@@ -2,124 +2,236 @@ const { extractProductFilter } = require("../extractors/productExtractor");
 const buildProductQuery = require("../builders/productQueryBuilder");
 const { findProducts } = require("../repositories/productRepository");
 const generateProductResponse = require("../services/productResponse");
-
+const contextManager = require("../memory/context/contextManager");
 
 async function productNode(state) {
 
     console.log("========================================");
-    console.log("Inside Product Node");
+    console.log("Inside Product Node (CONTEXT AWARE)");
 
-    const filters = await extractProductFilter(state.question);
+    // =====================================================
+    // Conversation Memory
+    // =====================================================
 
-    console.log("Filters:", filters);
+    const memory = state.memory || {};
 
-    let baseQuery = buildProductQuery(filters);
+    const previousFilters =
+        memory.product?.filters || {};
 
-    console.log("Mongo Query:", JSON.stringify(baseQuery, null, 2));
+    const previousProducts =
+        memory.product?.products || [];
 
-    let products = await findProducts(baseQuery);
+    // =====================================================
+    // Extract Filters
+    // =====================================================
 
-    console.log(`Products Found: ${products.length}`);
+    const question =
+    state.rewrittenQuestion || state.question;
 
-    // ----------------------------------------
-    // PRICE-ONLY SEARCH (IMPORTANT FIX)
-    // ----------------------------------------
+    const lowerQuestion =
+        question.toLowerCase();
 
-    if (!products.length && filters.maxPrice && !filters.keyword && !filters.category) {
+    const currentFilters =
+        await extractProductFilter(lowerQuestion);
 
-        console.log("Direct Price Search");
+    console.log("Current Filters:", currentFilters);
+    console.log("Previous Filters:", previousFilters);
 
-        products = await findProducts({
-            isBlocked: false,
-            quantity: { $gt: 0 },
-            salePrice: { $lte: filters.maxPrice }
-        });
+    // =====================================================
+    // Merge Filters
+    // =====================================================
 
-        console.log(`Price Match: ${products.length}`);
-    }
+    const mergedFilters =
+        contextManager.mergeFilters(
+            previousFilters,
+            currentFilters
+        );
 
-    // ----------------------------------------
-    // FALLBACK CHAIN
-    // ----------------------------------------
+    console.log("Merged Filters:", mergedFilters);
 
-    const hasFallbackSignal =
-        filters.keyword ||
-        filters.category ||
-        filters.brand ||
-        filters.feature;
+    // =====================================================
+    // Build Mongo Query
+    // =====================================================
 
-    const keyword = filters.keyword;
+    const mongoQuery =
+        buildProductQuery(mergedFilters);
 
-    if (!products.length && hasFallbackSignal && keyword) {
+    console.log("Mongo Query:");
+    console.log(JSON.stringify(mongoQuery, null, 2));
 
-        console.log("Fallback -> productName");
+    let products =
+        await findProducts(mongoQuery);
 
-        products = await findProducts({
-            isBlocked: false,
-            quantity: { $gt: 0 },
-            productName: { $regex: keyword, $options: "i" }
-        });
-    }
+    console.log("Products Found:", products.length);
 
-    if (!products.length && hasFallbackSignal && keyword) {
+    // =====================================================
+    // Price-only fallback
+    // =====================================================
 
-        console.log("Fallback -> category");
+    if (
+        !products.length &&
+        mergedFilters.maxPrice &&
+        !mergedFilters.keyword &&
+        !mergedFilters.category &&
+        !mergedFilters.brand &&
+        !mergedFilters.feature
+    ) {
 
-        products = await findProducts({
-            isBlocked: false,
-            quantity: { $gt: 0 },
-            category: { $regex: keyword, $options: "i" }
-        });
-    }
-
-    if (!products.length && hasFallbackSignal && keyword) {
-
-        console.log("Fallback -> feature");
-
-        products = await findProducts({
-            isBlocked: false,
-            quantity: { $gt: 0 },
-            feature: { $regex: keyword, $options: "i" }
-        });
-    }
-
-    if (!products.length && hasFallbackSignal && keyword) {
-
-        console.log("Fallback -> model");
+        console.log("Using Price Fallback");
 
         products = await findProducts({
+
             isBlocked: false,
-            quantity: { $gt: 0 },
-            model: { $regex: keyword, $options: "i" }
+
+            quantity: {
+                $gt: 0
+            },
+
+            salePrice: {
+                $lte: mergedFilters.maxPrice
+            }
+
         });
+
+        console.log("Price Fallback:", products.length);
     }
 
-    // ----------------------------------------
-    // FINAL HANDLING
-    // ----------------------------------------
+    // =====================================================
+    // Follow-up Context Refinement
+    // =====================================================
+
+    if (
+        previousProducts.length &&
+        (
+            mergedFilters.brand ||
+            mergedFilters.category ||
+            mergedFilters.feature
+        )
+    ) {
+
+        console.log("Applying Context Refinement");
+
+        let refinedProducts = [...previousProducts];
+
+        if (mergedFilters.brand) {
+
+            refinedProducts = refinedProducts.filter(p =>
+                p.brand &&
+                p.brand.toLowerCase() ===
+                mergedFilters.brand.toLowerCase()
+            );
+
+        }
+
+        if (mergedFilters.category) {
+
+            refinedProducts = refinedProducts.filter(p =>
+                p.category &&
+                p.category.toLowerCase() ===
+                mergedFilters.category.toLowerCase()
+            );
+
+        }
+
+        if (mergedFilters.feature) {
+
+            refinedProducts = refinedProducts.filter(p =>
+                p.feature &&
+                p.feature.toLowerCase().includes(
+                    mergedFilters.feature.toLowerCase()
+                )
+            );
+
+        }
+
+        if (refinedProducts.length) {
+
+            console.log(
+                "Using Refined Products:",
+                refinedProducts.length
+            );
+
+            products = refinedProducts;
+
+        }
+
+    }
+
+    // =====================================================
+    // No Products
+    // =====================================================
 
     if (!products.length) {
+
         return {
+
             ...state,
+
             intent: "PRODUCT",
-            context: [],
-            answer: "Sorry, no products found for your search at the moment."
+
+            memory: {
+
+                ...memory,
+
+                lastIntent: "PRODUCT",
+
+                product: {
+
+                    filters: mergedFilters,
+
+                    products: []
+
+                }
+
+            },
+
+            answer:
+                "Sorry, no products found for your search."
+
         };
+
     }
 
-    console.log(`Final Products: ${products.length}`);
+    // =====================================================
+    // Generate Response
+    // =====================================================
 
-    const answer = await generateProductResponse(
-        state.question,
-        products
-    );
+    const answer =
+        await generateProductResponse(
+            state.question,
+            products
+        );
+
+    // =====================================================
+    // Save Memory
+    // =====================================================
 
     return {
+
         ...state,
+
         intent: "PRODUCT",
-        context: products,
-        answer
+
+        answer,
+
+        memory: {
+
+            ...memory,
+
+            lastIntent: "PRODUCT",
+
+            product: {
+
+                filters: mergedFilters,
+
+                products
+
+            }
+
+        }
+
     };
+
 }
 
 module.exports = productNode;

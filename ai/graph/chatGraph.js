@@ -1,10 +1,29 @@
 const { StateGraph, START, END } = require("@langchain/langgraph");
-
 const { GraphState } = require("./state");
 
-const routerNode = require("../nodes/routerNode");
+// =====================
+// Conversation
+// =====================
+const memoryNode = require("../nodes/memoryNode");
+const rewriteNode = require("../nodes/rewriteNode");
 
+// =====================
+// Context
+// =====================
+const contextNode = require("../nodes/contextNode");
+const saveContextNode = require("../nodes/saveContextNode");
+
+// =====================
+// Router
+// =====================
+const routerNode = require("../nodes/routerNode");
+const referenceResolverNode = require("../nodes/referenceResolverNode");
+
+// =====================
+// Business Nodes
+// =====================
 const productNode = require("../nodes/productNode");
+const productDetailsNode = require("../nodes/productDetailsNode");
 const recommendationNode = require("../nodes/recommendationNode");
 const analyticsNode = require("../nodes/analyticsNode");
 const orderNode = require("../nodes/orderNode");
@@ -14,41 +33,54 @@ const generalNode = require("../nodes/generalNode");
 
 const graph = new StateGraph(GraphState)
 
-    // =============================
-    // Nodes
-    // =============================
+    // =====================
+    // Conversation
+    // =====================
+    .addNode("memoryLoader", memoryNode)
+    .addNode("rewrite", rewriteNode)
 
+    // =====================
+    // Context
+    // =====================
+    .addNode("contextLoader", contextNode)
+    .addNode("contextSaver", saveContextNode)
+
+    // =====================
+    // Router
+    // =====================
     .addNode("router", routerNode)
+    .addNode("referenceResolver", referenceResolverNode)
 
+    // =====================
+    // Business Nodes
+    // =====================
     .addNode("product", productNode)
-
+    .addNode("productDetails", productDetailsNode)
     .addNode("recommendation", recommendationNode)
-
     .addNode("analytics", analyticsNode)
-
     .addNode("order", orderNode)
-
     .addNode("account", accountNode)
-
     .addNode("knowledge", knowledgeNode)
-
     .addNode("general", generalNode)
 
-    // =============================
-    // Start
-    // =============================
+    // =====================
+    // Flow
+    // =====================
+    .addEdge(START, "memoryLoader")
+    .addEdge("memoryLoader", "rewrite")
+    .addEdge("rewrite", "contextLoader")
+    .addEdge("contextLoader", "router")
+    .addEdge("router", "referenceResolver")
 
-    .addEdge(START, "router")
-
-    // =============================
-    // Router
-    // =============================
-
+    // =====================
+    // Conditional Routing
+    // =====================
     .addConditionalEdges(
-        "router",
+        "referenceResolver",
         (state) => state.intent,
         {
             PRODUCT: "product",
+            PRODUCT_DETAILS: "productDetails",
             PRODUCT_RECOMMENDATION: "recommendation",
             ANALYTICS: "analytics",
             ORDER: "order",
@@ -58,22 +90,18 @@ const graph = new StateGraph(GraphState)
         }
     )
 
-    // =============================
-    // End
-    // =============================
+    // =====================
+    // Save Context
+    // =====================
+    .addEdge("product", "contextSaver")
+    .addEdge("productDetails", "contextSaver")
+    .addEdge("recommendation", "contextSaver")
+    .addEdge("analytics", "contextSaver")
+    .addEdge("order", "contextSaver")
+    .addEdge("account", "contextSaver")
+    .addEdge("knowledge", "contextSaver")
+    .addEdge("general", "contextSaver")
 
-    .addEdge("product", END)
-
-    .addEdge("recommendation", END)
-
-    .addEdge("analytics", END)
-
-    .addEdge("order", END)
-
-    .addEdge("account", END)
-
-    .addEdge("knowledge", END)
-
-    .addEdge("general", END);
+    .addEdge("contextSaver", END);
 
 module.exports = graph.compile();

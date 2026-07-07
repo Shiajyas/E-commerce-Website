@@ -158,6 +158,7 @@ async function extractOrder(question) {
     const invalidOrderIds = new Set([
         "",
         "order",
+        "confirmed",
         "orders",
         "my order",
         "my orders",

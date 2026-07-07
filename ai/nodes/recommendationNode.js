@@ -13,62 +13,173 @@ const recommendationScoring =
 const recommendationResponse =
     require("../services/recommendationResponse");
 
-const { findProducts } =
-    require("../repositories/productRepository");
+const {
+    findProducts
+} = require("../repositories/productRepository");
+
+const contextManager =
+    require("../memory/context/contextManager");
 
 async function recommendationNode(state) {
 
     console.log("========================================");
-    console.log("Inside Recommendation Node");
+    console.log("Inside Recommendation Node (DOMAIN MEMORY)");
+    console.log("========================================");
 
-    // -----------------------------------
-    // STEP 1 - Extract Requirements
-    // -----------------------------------
+    // =====================================================
+    // Conversation Memory
+    // =====================================================
+
+    const memory = state.memory || {};
+
+    const previousFilters =
+        memory.recommendation?.filters || {};
+
+    const previousProducts =
+        memory.recommendation?.products || [];
+
+    // =====================================================
+    // Question
+    // =====================================================
+
+    const question =
+        state.rewrittenQuestion ||
+        state.question ||
+        "";
+
+    const lowerQuestion =
+        question.toLowerCase();
+
+    // =====================================================
+    // Extract Recommendation Requirements
+    // =====================================================
 
     const requirements =
-        await extractRecommendation(state.question);
+        await extractRecommendation(question);
 
     console.log("Requirements:");
     console.log(requirements);
 
-    // -----------------------------------
-    // STEP 2 - Convert Requirements -> Filters
-    // -----------------------------------
+    // =====================================================
+    // Build Filters
+    // =====================================================
 
-    const filters =
+    const currentFilters =
         recommendationRuleEngine(requirements);
 
-    console.log("Rule Filters:");
-    console.log(filters);
+    console.log("Current Filters:");
+    console.log(currentFilters);
 
-    // -----------------------------------
-    // STEP 3 - Validation
-    // -----------------------------------
+    // =====================================================
+    // Merge Filters
+    // =====================================================
 
-    const hasSignal =
-        filters.brand ||
-        filters.category.length ||
-        filters.feature.length ||
-        filters.maxPrice != null;
+    const mergedFilters =
+        contextManager.mergeFilters(
+            previousFilters,
+            currentFilters
+        );
 
-    if (!hasSignal) {
+    console.log("Merged Filters:");
+    console.log(mergedFilters);
+
+    // =====================================================
+    // Follow-up Detection
+    // =====================================================
+
+    const followUpSignals = [
+        "cheaper",
+        "budget",
+        "less",
+        "lower",
+        "instead",
+        "another",
+        "different",
+        "compare",
+        "better",
+        "show",
+        "which"
+    ];
+
+    const isFollowUp =
+        previousProducts.length > 0 &&
+        followUpSignals.some(word =>
+            lowerQuestion.includes(word)
+        );
+
+    // =====================================================
+    // Use Previous Recommendation
+    // =====================================================
+
+    if (isFollowUp) {
+
+        console.log("Using Previous Recommendation Context");
+
+        let refinedProducts = [...previousProducts];
+
+        if (
+            lowerQuestion.includes("cheaper") ||
+            lowerQuestion.includes("budget")
+        ) {
+
+            refinedProducts.sort(
+                (a, b) => a.salePrice - b.salePrice
+            );
+
+        }
+
+        if (lowerQuestion.includes("better")) {
+
+            refinedProducts.sort(
+                (a, b) =>
+                    (b.recommendationScore || 0) -
+                    (a.recommendationScore || 0)
+            );
+
+        }
+
+        const answer =
+            await recommendationResponse(
+                question,
+                refinedProducts
+            );
 
         return {
+
             ...state,
+
             intent: "PRODUCT_RECOMMENDATION",
-            context: [],
-            answer:
-                "Please provide more details such as location, brand, camera type, or budget so I can recommend suitable products."
+
+            answer,
+
+            memory: {
+
+                ...memory,
+
+                lastIntent: "PRODUCT_RECOMMENDATION",
+
+                recommendation: {
+
+                    filters: mergedFilters,
+
+                    products: refinedProducts
+
+                }
+
+            }
+
         };
 
     }
 
-    // -----------------------------------
-    // STEP 4 - Build Query
-    // -----------------------------------
+    // =====================================================
+    // Database Query
+    // =====================================================
 
     const query =
-        recommendationQueryBuilder(filters);
+        recommendationQueryBuilder(
+            mergedFilters
+        );
 
     console.log("Mongo Query:");
     console.log(JSON.stringify(query, null, 2));
@@ -78,40 +189,65 @@ async function recommendationNode(state) {
 
     console.log("Products Found:", products.length);
 
-    // -----------------------------------
-    // STEP 5 - Generic Fallback
-    // -----------------------------------
+    // =====================================================
+    // Global Fallback
+    // =====================================================
 
     if (!products.length) {
 
-        products = await findProducts({
-            isBlocked: false,
-            quantity: { $gt: 0 }
-        });
+        products =
+            await findProducts({
+
+                isBlocked: false,
+
+                quantity: {
+                    $gt: 0
+                }
+
+            });
 
     }
 
     if (!products.length) {
 
         return {
+
             ...state,
+
             intent: "PRODUCT_RECOMMENDATION",
-            context: [],
+
             answer:
-                "Sorry, no suitable products are available right now."
+                "Sorry, no suitable products are available right now.",
+
+            memory: {
+
+                ...memory,
+
+                lastIntent: "PRODUCT_RECOMMENDATION",
+
+                recommendation: {
+
+                    filters: mergedFilters,
+
+                    products: []
+
+                }
+
+            }
+
         };
 
     }
 
-    // -----------------------------------
-    // STEP 6 - Score Products
-    // -----------------------------------
+    // =====================================================
+    // Recommendation Scoring
+    // =====================================================
 
     products =
         recommendationScoring(
             products,
             requirements,
-            filters
+            mergedFilters
         );
 
     console.table(
@@ -134,19 +270,19 @@ async function recommendationNode(state) {
 
     );
 
-    // -----------------------------------
-    // STEP 7 - Generate Response
-    // -----------------------------------
+    // =====================================================
+    // Generate Response
+    // =====================================================
 
     const answer =
         await recommendationResponse(
-            state.question,
+            question,
             products
         );
 
-    // -----------------------------------
-    // STEP 8 - Return
-    // -----------------------------------
+    // =====================================================
+    // Save Memory
+    // =====================================================
 
     return {
 
@@ -154,9 +290,23 @@ async function recommendationNode(state) {
 
         intent: "PRODUCT_RECOMMENDATION",
 
-        context: products,
+        answer,
 
-        answer
+        memory: {
+
+            ...memory,
+
+            lastIntent: "PRODUCT_RECOMMENDATION",
+
+            recommendation: {
+
+                filters: mergedFilters,
+
+                products
+
+            }
+
+        }
 
     };
 

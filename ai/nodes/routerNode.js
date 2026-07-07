@@ -1,6 +1,11 @@
+const routerPrompt = require("../prompts/routerPrompt");
+const { llm } = require("../config/ollama");
+const resolveIntent = require("../utils/intentResolver");
+
 const VALID_INTENTS = new Set([
     "PRODUCT",
     "PRODUCT_RECOMMENDATION",
+    "PRODUCT_DETAILS",
     "ANALYTICS",
     "ORDER",
     "ACCOUNT",
@@ -8,167 +13,226 @@ const VALID_INTENTS = new Set([
     "GENERAL"
 ]);
 
-function normalize(q = "") {
-    return String(q)
-        .toLowerCase()
-        .trim();
-}
+async function routerNode(state) {
 
-function routerNode(state) {
+    console.log("Router received state:");
+    console.dir(state, { depth: null });
 
-    const q = normalize(state.question);
+    try {
 
-    console.log("========== ROUTER ==========");
-    console.log("QUESTION:", state.question);
+        const question =
+            state.rewrittenQuestion ??
+            state.question ??
+            state.message ??
+            "";
 
-    // ====================================================
-    // 1. ANALYTICS (Highest Priority)
-    // ====================================================
+        const lowerQuestion = question.toLowerCase();
 
-    if (
-        /\b(how many|count|total|average|avg|stock|available|max|min|highest|lowest)\b/.test(q)
-    ) {
+        const history = (state.chatHistory || [])
+            .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+            .join("\n");
 
-        console.log("ROUTE -> ANALYTICS");
+        console.log("\n================================");
+        console.log("ROUTER NODE");
+        console.log("================================");
+        console.log("Question :", question);
+
+        const memory = state.memory || {};
+
+        const previousIntent =
+            memory.lastIntent || null;
+
+        const hasProducts =
+            (memory.product?.products || []).length > 0;
+
+        const hasRecommendations =
+            (memory.recommendation?.products || []).length > 0;
+
+        const hasKnowledge =
+            (memory.knowledge?.docs || []).length > 0;
+
+        const hasOrders =
+            (memory.order?.orders || []).length > 0;
+
+        const hasAnalytics =
+            !!memory.analytics?.result;
+
+        //----------------------------------------------------
+        // Follow-up Detection
+        //----------------------------------------------------
+
+        const followUpPattern =
+            /\b(it|its|this|that|these|those|they|them|he|she|first|second|third|one|ones|which|how|why|when|where|advantages|benefits|drawbacks|pros|cons|details|detail|features|specifications|support|compatible|works?|working|more|again|continue|expand|compare|same|also|another|cheaper|better|difference|instead)\b/i;
+
+        const isFollowUp =
+            followUpPattern.test(lowerQuestion);
+
+        //----------------------------------------------------
+        // Product Reference Detection
+        //----------------------------------------------------
+
+        const productReferencePattern =
+            /\b(product\s*\d+|\d+\s*product|number\s*\d+|no\.?\s*\d+|tell me about\s*\d+|talk about\s*\d+|describe\s*\d+|show\s*\d+)\b/i;
+
+        const numberMatch =
+            lowerQuestion.match(/\b(\d+)\b/);
+
+        const isProductReference =
+            hasRecommendations &&
+            (
+                productReferencePattern.test(lowerQuestion) ||
+                (
+                    numberMatch &&
+                    (
+                        lowerQuestion.includes("product") ||
+                        lowerQuestion.includes("about") ||
+                        lowerQuestion.includes("tell") ||
+                        lowerQuestion.includes("talk") ||
+                        lowerQuestion.includes("describe")
+                    )
+                )
+            );
+
+        if (isProductReference) {
+
+            console.log("Product Reference Detected");
+
+            return {
+
+                ...state,
+
+                previousIntent,
+
+                selectedProductIndex:
+                    Number(numberMatch[1]) - 1,
+
+                intent: "PRODUCT_DETAILS"
+
+            };
+
+        }
+
+        //----------------------------------------------------
+        // Ask LLM
+        //----------------------------------------------------
+
+        const prompt =
+            await routerPrompt.formatMessages({
+                history,
+                question
+            });
+
+        const response =
+            await llm.invoke(prompt);
+
+        let llmIntent =
+            String(response.content)
+                .trim()
+                .toUpperCase();
+
+        if (!VALID_INTENTS.has(llmIntent)) {
+            llmIntent = "GENERAL";
+        }
+
+        console.log("LLM Intent :", llmIntent);
+
+        //----------------------------------------------------
+        // Recover Previous Intent
+        //----------------------------------------------------
+
+        if (
+            isFollowUp &&
+            previousIntent &&
+            llmIntent === "GENERAL"
+        ) {
+
+            switch (previousIntent) {
+
+                case "PRODUCT":
+
+                    if (hasProducts)
+                        llmIntent = "PRODUCT";
+
+                    break;
+
+                case "PRODUCT_RECOMMENDATION":
+
+                    if (hasRecommendations)
+                        llmIntent =
+                            "PRODUCT_RECOMMENDATION";
+
+                    break;
+
+                case "KNOWLEDGE":
+
+                    if (hasKnowledge)
+                        llmIntent = "KNOWLEDGE";
+
+                    break;
+
+                case "ORDER":
+
+                    if (hasOrders)
+                        llmIntent = "ORDER";
+
+                    break;
+
+                case "ANALYTICS":
+
+                    if (hasAnalytics)
+                        llmIntent = "ANALYTICS";
+
+                    break;
+
+            }
+
+            console.log(
+                "Recovered Intent:",
+                llmIntent
+            );
+
+        }
+
+        //----------------------------------------------------
+        // Final Intent
+        //----------------------------------------------------
+
+        const finalIntent =
+            resolveIntent(
+                {
+                    ...state,
+                    memory
+                },
+                llmIntent
+            );
+
+        console.log("Final Intent :", finalIntent);
 
         return {
+
             ...state,
-            intent: "ANALYTICS"
+
+            previousIntent,
+
+            intent: finalIntent
+
+        };
+
+    } catch (error) {
+
+        console.error(error);
+
+        return {
+
+            ...state,
+
+            previousIntent: null,
+
+            intent: "GENERAL"
+
         };
 
     }
-
-    // ====================================================
-    // 2. ORDER
-    // ====================================================
-
-    if (
-        /\b(order|orders|track|tracking|delivery|shipping|refund|return|cancel|payment|purchase)\b/.test(q)
-    ) {
-
-        console.log("ROUTE -> ORDER");
-
-        return {
-            ...state,
-            intent: "ORDER"
-        };
-
-    }
-
-    // ====================================================
-    // 3. ACCOUNT
-    // ====================================================
-
-    if (
-        /\b(login|logout|register|signup|sign up|profile|account|change password|forgot password)\b/.test(q)
-    ) {
-
-        console.log("ROUTE -> ACCOUNT");
-
-        return {
-            ...state,
-            intent: "ACCOUNT"
-        };
-
-    }
-
-    // ====================================================
-    // 4. KNOWLEDGE
-    // ====================================================
-
-    if (
-
-        q.startsWith("what is") ||
-
-        q.startsWith("what are") ||
-
-        q.startsWith("how does") ||
-
-        q.startsWith("how do") ||
-
-        q.startsWith("how to") ||
-
-        q.startsWith("why") ||
-
-        q.startsWith("when") ||
-
-        q.startsWith("where") ||
-
-        q.includes("difference") ||
-
-        q.includes("meaning") ||
-
-        q.includes("define") ||
-
-        q.includes("explain")
-
-    ) {
-
-        console.log("ROUTE -> KNOWLEDGE");
-
-        return {
-            ...state,
-            intent: "KNOWLEDGE"
-        };
-
-    }
-
-    // ====================================================
-    // 5. PRODUCT RECOMMENDATION
-    // ====================================================
-
-    if (
-
-        /\b(best|recommend|suggest|which|good|suitable|ideal)\b/.test(q)
-
-        ||
-
-        /\b(for home|for office|for shop|for warehouse|for hospital|for school|for outdoor|for indoor|for apartment|for parking)\b/.test(q)
-
-    ) {
-
-        console.log("ROUTE -> PRODUCT_RECOMMENDATION");
-
-        return {
-            ...state,
-            intent: "PRODUCT_RECOMMENDATION"
-        };
-
-    }
-
-    // ====================================================
-    // 6. PRODUCT SEARCH
-    // ====================================================
-
-    if (
-
-        /\b(show|find|search|buy|get|list|display|available)\b/.test(q)
-
-        ||
-
-        /\b(camera|cameras|bullet|dome|wifi|wireless|hikvision|cpplus|cp plus|nvr|dvr|ip camera|2mp|4mp|5mp|8mp|poe)\b/.test(q)
-
-    ) {
-
-        console.log("ROUTE -> PRODUCT");
-
-        return {
-            ...state,
-            intent: "PRODUCT"
-        };
-
-    }
-
-    // ====================================================
-    // 7. GENERAL
-    // ====================================================
-
-    console.log("ROUTE -> GENERAL");
-
-    return {
-        ...state,
-        intent: "GENERAL"
-    };
 
 }
 

@@ -5,11 +5,94 @@ const synonyms = require("../data/synonyms.json");
 // --------------------------------------------------
 
 function normalize(text = "") {
+
     return String(text)
         .toLowerCase()
+        .replace(/[₹,]/g, "")
         .replace(/[-_]/g, " ")
+        .replace(/[^\w\s]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
+
+}
+
+// --------------------------------------------------
+// Remove conversational filler words
+// --------------------------------------------------
+
+function cleanQuestion(question = "") {
+
+    const stopWords = [
+        "show",
+        "me",
+        "find",
+        "search",
+        "buy",
+        "need",
+        "want",
+        "looking",
+        "looking for",
+        "please",
+        "camera",
+        "cameras",
+        "security",
+        "system",
+
+        "it",
+        "its",
+        "it's",
+        "this",
+        "that",
+        "these",
+        "those",
+
+        "one",
+        "ones",
+
+        "also",
+        "should",
+        "must",
+        "have",
+        "has",
+        "with",
+        "without",
+
+        "only",
+        "just",
+
+        "which",
+
+        "under",
+        "below",
+        "over",
+        "above",
+        "between",
+
+        "showing",
+        "give",
+        "need a",
+
+        "can",
+        "could",
+        "would",
+
+        "be"
+    ];
+
+    let text = normalize(question);
+
+    for (const word of stopWords) {
+
+        const regex = new RegExp(`\\b${escapeRegex(word)}\\b`, "gi");
+
+        text = text.replace(regex, " ");
+
+    }
+
+    return text
+        .replace(/\s+/g, " ")
+        .trim();
+
 }
 
 // --------------------------------------------------
@@ -17,16 +100,18 @@ function normalize(text = "") {
 // --------------------------------------------------
 
 function escapeRegex(str = "") {
+
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 }
 
 // --------------------------------------------------
-// Direct Catalog Match
+// Direct catalog match
 // --------------------------------------------------
 
 function detectDirect(question, catalogList = []) {
 
-    const text = normalize(question);
+    const text = cleanQuestion(question);
 
     const items = [...catalogList].sort(
         (a, b) => b.length - a.length
@@ -40,7 +125,9 @@ function detectDirect(question, catalogList = []) {
         );
 
         if (regex.test(text)) {
+
             return item;
+
         }
 
     }
@@ -50,13 +137,12 @@ function detectDirect(question, catalogList = []) {
 }
 
 // --------------------------------------------------
-// Synonym Match
-// (DO NOT depend on catalog)
+// Synonym match
 // --------------------------------------------------
 
 function detectBySynonym(question, synonymMap = {}) {
 
-    const text = normalize(question);
+    const text = cleanQuestion(question);
 
     const entries = Object.entries(synonymMap).sort(
         (a, b) => b[0].length - a[0].length
@@ -69,16 +155,10 @@ function detectBySynonym(question, synonymMap = {}) {
             "i"
         );
 
-        if (!regex.test(text)) {
-            continue;
-        }
+        if (!regex.test(text)) continue;
 
-        // Ignore generic words like "camera"
-        if (!value) {
-            continue;
-        }
+        if (!value) continue;
 
-        // Return normalized synonym value.
         return value;
 
     }
@@ -127,7 +207,7 @@ function detectFeature(question, catalog) {
 }
 
 // --------------------------------------------------
-// Extract All
+// Extract everything
 // --------------------------------------------------
 
 function extractAll(question, catalog) {
@@ -139,17 +219,31 @@ function extractAll(question, catalog) {
     const feature = detectFeature(question, catalog);
 
     return {
+
         brand,
+
         category,
+
         feature,
-        hasSignal: !!(brand || category || feature)
+
+        hasSignal: Boolean(
+            brand ||
+            category ||
+            feature
+        )
+
     };
 
 }
 
 module.exports = {
+
     detectBrand,
+
     detectCategory,
+
     detectFeature,
+
     extractAll
+
 };

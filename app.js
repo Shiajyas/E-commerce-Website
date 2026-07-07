@@ -11,8 +11,16 @@ const cors = require('cors');
 const passport = require("./helpers/passport"); // Ensure this is loaded
 const { isLogged, isAdmin, disableCache } = require("./Authentication/auth");
 const User = require("./models/userSchema");
+const chatRoutes = require("./routes/chatRoutes");
+const loadIndex = require("./ai/knowladge/bm25/loadIndex");
+const chromaClient = require("./ai/knowladge/vectordb/chromaClient");
 // Connect to the database
 connectDB();
+
+chromaClient.getCollection(); // Initialize Chroma collection
+
+
+loadIndex(); // Load BM25 index
 
 const PORT = process.env.PORT || 3000;
 
@@ -151,5 +159,6 @@ const adminRoutes = require("./routes/adminRouter");
 
 app.use("/", userRoutes);
 app.use("/admin", adminRoutes);
+app.use("/chat",chatRoutes);
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
