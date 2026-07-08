@@ -7,6 +7,11 @@ const loadIndex = require("./ai/knowladge/bm25/loadIndex");
 
 const graph = require("./ai/graph/chatGraph");
 
+if (!globalThis.crypto) {
+    globalThis.crypto = crypto.webcrypto;
+}
+
+
 async function runConversation(title, messages) {
 
     const sessionId = crypto.randomUUID();
