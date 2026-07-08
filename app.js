@@ -14,6 +14,12 @@ const User = require("./models/userSchema");
 const chatRoutes = require("./routes/chatRoutes");
 const loadIndex = require("./ai/knowladge/bm25/loadIndex");
 const chromaClient = require("./ai/knowladge/vectordb/chromaClient");
+const crypto = require("node:crypto");
+
+if (!globalThis.crypto) {
+    globalThis.crypto = crypto.webcrypto;
+}
+
 // Connect to the database
 connectDB();
 
