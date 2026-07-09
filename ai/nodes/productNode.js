@@ -8,6 +8,7 @@ async function productNode(state) {
 
     console.log("========================================");
     console.log("Inside Product Node (CONTEXT AWARE)");
+    console.log("========================================");
 
     // =====================================================
     // Conversation Memory
@@ -26,7 +27,9 @@ async function productNode(state) {
     // =====================================================
 
     const question =
-    state.rewrittenQuestion || state.question;
+        state.rewrittenQuestion ||
+        state.question ||
+        "";
 
     const lowerQuestion =
         question.toLowerCase();
@@ -34,8 +37,11 @@ async function productNode(state) {
     const currentFilters =
         await extractProductFilter(lowerQuestion);
 
-    console.log("Current Filters:", currentFilters);
-    console.log("Previous Filters:", previousFilters);
+    console.log("Current Filters:");
+    console.log(currentFilters);
+
+    console.log("Previous Filters:");
+    console.log(previousFilters);
 
     // =====================================================
     // Merge Filters
@@ -47,7 +53,8 @@ async function productNode(state) {
             currentFilters
         );
 
-    console.log("Merged Filters:", mergedFilters);
+    console.log("Merged Filters:");
+    console.log(mergedFilters);
 
     // =====================================================
     // Build Mongo Query
@@ -65,7 +72,7 @@ async function productNode(state) {
     console.log("Products Found:", products.length);
 
     // =====================================================
-    // Price-only fallback
+    // Price-only Fallback
     // =====================================================
 
     if (
@@ -79,25 +86,27 @@ async function productNode(state) {
 
         console.log("Using Price Fallback");
 
-        products = await findProducts({
+        products =
+            await findProducts({
 
-            isBlocked: false,
+                isBlocked: false,
 
-            quantity: {
-                $gt: 0
-            },
+                quantity: {
+                    $gt: 0
+                },
 
-            salePrice: {
-                $lte: mergedFilters.maxPrice
-            }
+                salePrice: {
+                    $lte: mergedFilters.maxPrice
+                }
 
-        });
+            });
 
         console.log("Price Fallback:", products.length);
+
     }
 
     // =====================================================
-    // Follow-up Context Refinement
+    // Context Refinement
     // =====================================================
 
     if (
@@ -115,32 +124,37 @@ async function productNode(state) {
 
         if (mergedFilters.brand) {
 
-            refinedProducts = refinedProducts.filter(p =>
-                p.brand &&
-                p.brand.toLowerCase() ===
-                mergedFilters.brand.toLowerCase()
-            );
+            refinedProducts =
+                refinedProducts.filter(product =>
+                    product.brand &&
+                    product.brand.toLowerCase() ===
+                    mergedFilters.brand.toLowerCase()
+                );
 
         }
 
         if (mergedFilters.category) {
 
-            refinedProducts = refinedProducts.filter(p =>
-                p.category &&
-                p.category.toLowerCase() ===
-                mergedFilters.category.toLowerCase()
-            );
+            refinedProducts =
+                refinedProducts.filter(product =>
+                    product.category &&
+                    product.category.toLowerCase() ===
+                    mergedFilters.category.toLowerCase()
+                );
 
         }
 
         if (mergedFilters.feature) {
 
-            refinedProducts = refinedProducts.filter(p =>
-                p.feature &&
-                p.feature.toLowerCase().includes(
-                    mergedFilters.feature.toLowerCase()
-                )
-            );
+            refinedProducts =
+                refinedProducts.filter(product =>
+                    product.feature &&
+                    product.feature
+                        .toLowerCase()
+                        .includes(
+                            mergedFilters.feature.toLowerCase()
+                        )
+                );
 
         }
 
@@ -158,7 +172,7 @@ async function productNode(state) {
     }
 
     // =====================================================
-    // No Products
+    // No Products Found
     // =====================================================
 
     if (!products.length) {
@@ -168,6 +182,11 @@ async function productNode(state) {
             ...state,
 
             intent: "PRODUCT",
+
+            answer:
+                "Sorry, no products found for your search.",
+
+            products: [],
 
             memory: {
 
@@ -183,27 +202,32 @@ async function productNode(state) {
 
                 }
 
-            },
-
-            answer:
-                "Sorry, no products found for your search."
+            }
 
         };
 
     }
 
     // =====================================================
-    // Generate Response
+    // Generate Product Response
     // =====================================================
 
-    const answer =
+    const result =
         await generateProductResponse(
-            state.question,
+            question,
             products
         );
 
+    console.log("\n========== PRODUCT RESULT ==========");
+    console.log(result.answer);
+
+    console.log("\n========== PRODUCTS ==========");
+    console.dir(result.products, {
+        depth: null
+    });
+
     // =====================================================
-    // Save Memory
+    // Return State
     // =====================================================
 
     return {
@@ -212,7 +236,9 @@ async function productNode(state) {
 
         intent: "PRODUCT",
 
-        answer,
+        answer: result.answer,
+
+        products: result.products,
 
         memory: {
 
@@ -224,7 +250,7 @@ async function productNode(state) {
 
                 filters: mergedFilters,
 
-                products
+                products: result.products
 
             }
 

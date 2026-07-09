@@ -1,106 +1,122 @@
 const chatService = require("../services/chatService");
 const { v4: uuidv4 } = require("uuid");
 
-
-
+// ===============================
+// Render Chat Page
+// ===============================
 const getChatPage = (req, res) => {
 
     console.log("Rendering chat page");
 
+    // Create chat session if not exists
     if (!req.session.chatId) {
         req.session.chatId = uuidv4();
     }
 
     res.render("chat", {
         sessionId: req.session.chatId,
-        user: req.session.user
+        user: req.session.user,
+        userId: req.session.user || "",
+        isLoggedIn: !!req.session.user
     });
+
 };
 
-
-// Handle User Message
+// ===============================
+// Handle Chat Message
+// ===============================
 const handleChatMessage = async (req, res) => {
 
     try {
 
+        const userId = req.session.user || "";
 
-        const userId = req.session.user || null;
+        const { message } = req.body;
 
-
-        const {
-            message
-        } = req.body;
-
-
-
-        // Get existing chat session
-        let sessionId = req.session.chatId;
-
-
-
-        // If chatId does not exist create one
-        if (!sessionId) {
-
-            sessionId = uuidv4();
-
-            req.session.chatId = sessionId;
+        // Create session if missing
+        if (!req.session.chatId) {
+            req.session.chatId = uuidv4();
         }
 
+        const sessionId = req.session.chatId;
 
-
+        console.log("================================");
+        console.log("Incoming Chat");
         console.log({
             userId,
             sessionId,
             message
         });
-
-
+        console.log("================================");
 
         const result = await chatService.handleChat({
 
             question: message,
-
             sessionId,
-
             userId
 
         });
-
-
 
         res.json({
 
             success: true,
 
-            answer: result.answer,
+            data: {
 
-            sessionId
+                answer: result.answer || "",
 
-        });
+                products: result.products || [],
 
+                analytics: result.analytics || null,
 
+                orders: result.orders || [],
 
-    } catch (error) {
+                sessionId,
 
+                userId,
 
-        console.log(
-            "Chat Controller Error:",
-            error
-        );
+                isLoggedIn: !!userId
 
-
-        res.status(500).json({
-
-            success:false,
-
-            answer:"Error in AI system"
+            }
 
         });
 
     }
+
+    catch (error) {
+
+        console.error("Chat Controller Error");
+        console.error(error);
+
+        res.status(500).json({
+
+            success: false,
+
+            error: error.message,
+
+            data: {
+
+                answer: "Sorry, something went wrong.",
+
+                products: [],
+
+                analytics: null,
+
+                orders: [],
+
+                sessionId: req.session.chatId || null,
+
+                userId: req.session.user || "",
+
+                isLoggedIn: !!req.session.user
+
+            }
+
+        });
+
+    }
+
 };
-
-
 
 module.exports = {
 

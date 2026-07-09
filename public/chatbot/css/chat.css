@@ -1,0 +1,640 @@
+/* ===========================
+   RESET
+=========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#f4f6f9;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+/* ===========================
+   CHAT WRAPPER
+=========================== */
+
+.chat-wrapper{
+    max-width:950px;
+    height:85vh;
+    margin:20px auto;
+    background:#fff;
+    border-radius:18px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
+
+/* ===========================
+   HEADER
+=========================== */
+
+.chat-header{
+
+    background:linear-gradient(135deg,#28a745,#1f8b39);
+
+    color:white;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:18px 22px;
+
+}
+
+.header-left{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+}
+
+.bot-avatar{
+
+    width:55px;
+
+    height:55px;
+
+    border-radius:50%;
+
+    background:white;
+
+    color:#28a745;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:24px;
+
+}
+
+.chat-header h4{
+
+    margin-bottom:5px;
+
+}
+
+.chat-header p{
+
+    margin:0;
+
+    opacity:.9;
+
+    font-size:14px;
+
+}
+
+/* ===========================
+   CHAT BODY
+=========================== */
+
+.chat-body{
+
+    flex:1;
+
+    overflow-y:auto;
+
+    padding:25px;
+
+    background:#eef2f5;
+
+}
+
+.chat-body::-webkit-scrollbar{
+
+    width:7px;
+
+}
+
+.chat-body::-webkit-scrollbar-thumb{
+
+    background:#bbb;
+
+    border-radius:10px;
+
+}
+
+/* ===========================
+   MESSAGE
+=========================== */
+
+.user-message,
+
+.bot-message{
+
+    display:flex;
+
+    margin-bottom:18px;
+
+}
+
+.user-message{
+
+    justify-content:flex-end;
+
+}
+
+.bot-message{
+
+    justify-content:flex-start;
+
+}
+
+.bubble{
+
+    max-width:75%;
+
+    border-radius:18px;
+
+    padding:15px 18px;
+
+    line-height:1.6;
+
+    font-size:15px;
+
+    word-break:break-word;
+
+}
+
+.user-message .bubble{
+
+    background:#28a745;
+
+    color:white;
+
+    border-bottom-right-radius:6px;
+
+}
+
+.bot-message .bubble{
+
+    background:white;
+
+    border:1px solid #ddd;
+
+    border-bottom-left-radius:6px;
+
+}
+
+/* ===========================
+   WELCOME
+=========================== */
+
+.welcome-title{
+
+    font-size:20px;
+
+    margin-bottom:15px;
+
+}
+
+.quick-question{
+
+    margin-top:20px;
+
+    margin-bottom:10px;
+
+    font-weight:bold;
+
+}
+
+.quick-buttons{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:10px;
+
+}
+
+.quick-btn{
+
+    border:none;
+
+    padding:8px 14px;
+
+    border-radius:20px;
+
+    background:#28a745;
+
+    color:white;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.quick-btn:hover{
+
+    background:#218838;
+
+}
+
+/* ===========================
+   PRODUCT CARD
+=========================== */
+
+.product-card{
+
+    display:flex;
+
+    gap:15px;
+
+    background:white;
+
+    border:1px solid #e3e3e3;
+
+    border-radius:14px;
+
+    padding:14px;
+
+    margin-top:12px;
+
+    transition:.25s;
+
+}
+
+.product-card:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 8px 18px rgba(0,0,0,.08);
+
+}
+
+.product-image{
+
+    width:95px;
+
+    height:95px;
+
+    border-radius:10px;
+
+    object-fit:cover;
+
+    border:1px solid #ddd;
+
+    background:#f5f5f5;
+
+}
+
+.product-info{
+
+    flex:1;
+
+}
+
+.product-title{
+
+    font-size:17px;
+
+    font-weight:600;
+
+    margin-bottom:5px;
+
+    color:#222;
+
+}
+
+.product-brand{
+
+    color:#777;
+
+    font-size:14px;
+
+    margin-bottom:4px;
+
+}
+
+.product-feature{
+
+    color:#555;
+
+    font-size:14px;
+
+    margin-bottom:8px;
+
+}
+
+.product-price{
+
+    font-size:21px;
+
+    color:#28a745;
+
+    font-weight:bold;
+
+}
+
+.product-actions{
+
+    margin-top:12px;
+
+}
+
+.view-btn{
+
+    display:inline-block;
+
+    text-decoration:none;
+
+    background:#28a745;
+
+    color:white;
+
+    padding:8px 15px;
+
+    border-radius:8px;
+
+    transition:.2s;
+
+}
+
+.view-btn:hover{
+
+    background:#1d7d33;
+
+    color:white;
+
+}
+
+.stock{
+
+    display:inline-block;
+
+    margin-left:10px;
+
+    padding:5px 10px;
+
+    border-radius:20px;
+
+    font-size:12px;
+
+    font-weight:bold;
+
+}
+
+.stock.in{
+
+    background:#d4edda;
+
+    color:#155724;
+
+}
+
+.stock.out{
+
+    background:#f8d7da;
+
+    color:#721c24;
+
+}
+
+/* ===========================
+   ANALYTICS
+=========================== */
+
+.analytics-card{
+
+    background:white;
+
+    border-left:5px solid #28a745;
+
+    padding:15px;
+
+    border-radius:10px;
+
+    margin-top:12px;
+
+    line-height:1.7;
+
+}
+
+/* ===========================
+   TYPING
+=========================== */
+
+.typing-box{
+
+    display:flex;
+
+    align-items:center;
+
+    padding:10px 20px;
+
+    gap:12px;
+
+    background:#eef2f5;
+
+}
+
+.typing-avatar{
+
+    width:42px;
+
+    height:42px;
+
+    background:#28a745;
+
+    color:white;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+.typing-bubble{
+
+    background:white;
+
+    border-radius:20px;
+
+    padding:12px 16px;
+
+    display:flex;
+
+    gap:6px;
+
+}
+
+.typing-bubble span{
+
+    width:8px;
+
+    height:8px;
+
+    background:#999;
+
+    border-radius:50%;
+
+    animation:typing 1s infinite;
+
+}
+
+.typing-bubble span:nth-child(2){
+
+    animation-delay:.2s;
+
+}
+
+.typing-bubble span:nth-child(3){
+
+    animation-delay:.4s;
+
+}
+
+@keyframes typing{
+
+    0%,100%{
+
+        transform:translateY(0);
+
+        opacity:.5;
+
+    }
+
+    50%{
+
+        transform:translateY(-6px);
+
+        opacity:1;
+
+    }
+
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+
+.chat-footer{
+
+    background:white;
+
+    border-top:1px solid #ddd;
+
+    display:flex;
+
+    padding:15px;
+
+    gap:12px;
+
+}
+
+#message{
+
+    flex:1;
+
+    border:1px solid #ccc;
+
+    border-radius:12px;
+
+    padding:14px;
+
+    outline:none;
+
+    transition:.2s;
+
+}
+
+#message:focus{
+
+    border-color:#28a745;
+
+    box-shadow:0 0 0 3px rgba(40,167,69,.15);
+
+}
+
+#sendBtn{
+
+    width:60px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#28a745;
+
+    color:white;
+
+    font-size:18px;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+#sendBtn:hover{
+
+    background:#208638;
+
+}
+
+/* ===========================
+   MOBILE
+=========================== */
+
+@media(max-width:768px){
+
+    .chat-wrapper{
+
+        height:100vh;
+
+        margin:0;
+
+        border-radius:0;
+
+    }
+
+    .bubble{
+
+        max-width:95%;
+
+    }
+
+    .product-card{
+
+        flex-direction:column;
+
+    }
+
+    .product-image{
+
+        width:100%;
+
+        height:220px;
+
+    }
+
+    .chat-header{
+
+        flex-direction:column;
+
+        gap:15px;
+
+        align-items:flex-start;
+
+    }
+
+}

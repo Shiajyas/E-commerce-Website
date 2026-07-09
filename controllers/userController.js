@@ -361,61 +361,229 @@ const verifyOtp = async (req, res) => {
     }
 };
 
-
 const userLogin = async (req, res) => {
+
     try {
-        const { email, password } = req.body
-        const findUser = await User.findOne({ isAdmin: "0", email: email })
 
-        console.log("working");
 
-        if (findUser) {
-            const isUserNotBlocked = findUser.isBlocked === false;
+        const { email, password } = req.body;
 
-            if (isUserNotBlocked) {
-                const passwordMatch = await bcrypt.compare(password, findUser.password)
-                if (passwordMatch) {
-                    req.session.user = findUser._id
-                    console.log("Logged in");
-                    res.redirect("/")
-                } else {
-                    console.log("Password is not matching");
-                    res.render("login", { message: "Password is not matching" })
+
+
+        const findUser =
+            await User.findOne({
+
+                isAdmin:"0",
+
+                email:email
+
+            });
+
+
+
+
+        if(!findUser){
+
+
+            return res.render(
+                "login",
+                {
+                    message:"User is not found"
                 }
-            } else {
-                console.log("User is blocked by admin");
-                res.render("login", { message: "User is blocked by admin" })
-            }
-        } else {
-            console.log("User is not found");
-            res.render("login", { message: "User is not found" })
+            );
+
+
         }
 
-    } catch (error) {
-        console.log(error.message);
-        res.render("login", { message: "Login failed" })
+
+
+
+
+
+        if(findUser.isBlocked){
+
+
+            return res.render(
+                "login",
+                {
+                    message:"User is blocked by admin"
+                }
+            );
+
+
+        }
+
+
+
+
+
+
+        const passwordMatch =
+            await bcrypt.compare(
+
+                password,
+
+                findUser.password
+
+            );
+
+
+
+
+
+
+        if(!passwordMatch){
+
+
+            return res.render(
+                "login",
+                {
+                    message:"Password is not matching"
+                }
+            );
+
+
+        }
+
+
+
+
+
+
+
+        /*
+            Store user id in session
+
+            Example:
+            req.session.user =
+            "6658ab34..."
+        */
+
+
+        req.session.user =
+            findUser._id.toString();
+
+
+
+
+
+        /*
+            Used by frontend
+            to clear guest chat
+        */
+
+
+        req.session.newLogin = true;
+
+
+
+
+
+
+        console.log(
+            "Login success:",
+            req.session.user
+        );
+
+
+
+
+
+        res.redirect("/");
+
+
+
     }
-}
+
+    catch(error){
 
 
+        console.log(
+            error.message
+        );
 
 
-
-
-const getLogoutUser = async (req, res) => {
-    try {
-        req.session.destroy((err) => {
-            if (err) {
-                console.log(err.message);
+        res.render(
+            "login",
+            {
+                message:"Login failed"
             }
-            console.log("Logged out");
-            res.redirect("/login")
-        })
-    } catch (error) {
-        console.log(error.message);
-    }
-}
+        );
 
+
+    }
+
+};
+
+
+
+const getLogoutUser = async(req,res)=>{
+
+
+    try{
+
+
+        req.session.destroy((err)=>{
+
+
+            if(err){
+
+
+                console.log(
+                    err.message
+                );
+
+
+            }
+
+
+
+
+
+            /*
+              Remove session cookie
+            */
+
+
+            res.clearCookie(
+                "connect.sid"
+            );
+
+
+
+
+
+            /*
+              Tell frontend
+              to clear chat storage
+
+            */
+
+
+            res.redirect(
+                "/login?logout=true"
+            );
+
+
+
+        });
+
+
+
+    }
+
+    catch(error){
+
+
+        console.log(
+            error.message
+        );
+
+
+    }
+
+
+};
 
 const getProductDetailsPage = async (req, res) => {
     try {

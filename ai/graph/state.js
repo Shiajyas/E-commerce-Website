@@ -28,8 +28,6 @@ const GraphState = Annotation.Root({
 
     intent: Annotation(),
     previousIntent: Annotation(),
-
-    // 👇 ADD THIS
     selectedProduct: Annotation(),
 
     // =====================================================
@@ -68,15 +66,18 @@ const GraphState = Annotation.Root({
             analytics: {
                 result: null
             }
-
         })
     }),
 
     // =====================================================
-    // FINAL RESPONSE
+    // RESPONSE
     // =====================================================
 
-    answer: Annotation()
+    answer: Annotation(),
+
+    response: Annotation(),
+
+    context: Annotation()
 
 });
 

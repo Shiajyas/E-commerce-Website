@@ -1,155 +1,179 @@
 <%- include("../partials/header") %>
 
-<style>
-.chat-page{
-    max-width:900px;
-    margin:40px auto;
-}
+<link rel="stylesheet" href="/chatbot/css/chat.css">
 
-.chat-card{
-    height:80vh;
-    background:#fff;
-    border-radius:15px;
-    overflow:hidden;
-    box-shadow:0 5px 20px rgba(0,0,0,.1);
-    display:flex;
-    flex-direction:column;
-}
+<div class="container-fluid py-4">
 
-.chat-header{
-    background:#28a745;
-    color:#fff;
-    padding:18px 25px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
+    <div class="chat-wrapper">
 
-.chat-header h4{
-    margin:0;
-    font-weight:600;
-}
-
-.chat-body{
-    flex:1;
-    overflow-y:auto;
-    background:#f8f9fa;
-    padding:20px;
-}
-
-.message{
-    display:flex;
-    margin-bottom:18px;
-}
-
-.message.user{
-    justify-content:flex-end;
-}
-
-.message.bot{
-    justify-content:flex-start;
-}
-
-.message .bubble{
-    max-width:70%;
-    padding:12px 18px;
-    border-radius:15px;
-    word-break:break-word;
-}
-
-.message.user .bubble{
-    background:#28a745;
-    color:#fff;
-}
-
-.message.bot .bubble{
-    background:#fff;
-    border:1px solid #ddd;
-}
-
-.chat-footer{
-    display:flex;
-    padding:15px;
-    border-top:1px solid #ddd;
-    background:#fff;
-}
-
-#message{
-    flex:1;
-    border:1px solid #ccc;
-    border-radius:10px;
-    padding:12px;
-    outline:none;
-}
-
-#sendBtn{
-    margin-left:10px;
-    width:60px;
-    border:none;
-    background:#28a745;
-    color:#fff;
-    border-radius:10px;
-}
-
-#sendBtn:hover{
-    background:#218838;
-}
-
-.typing{
-    color:#777;
-    font-style:italic;
-}
-</style>
-
-<div class="container chat-page">
-
-    <div class="chat-card">
+        <!-- =========================
+             HEADER
+        ========================== -->
 
         <div class="chat-header">
 
-            <h4>
-                <i class="fas fa-robot"></i>
-                AI Shopping Assistant
-            </h4>
+            <div class="header-left">
 
-            <a href="/shop" class="btn btn-light btn-sm">
-                Continue Shopping
-            </a>
+                <div class="bot-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
 
-        </div>
+                <div>
 
-        <div class="chat-body" id="chatBox">
+                    <h4>AI Shopping Assistant</h4>
 
-            <div class="message bot">
-                <div class="bubble">
-
-                    👋 Hello <%= locals.user?.name || "User" %>
-
-                    <br><br>
-
-                    I can help you with:
-
-                    <br>✅ Product Recommendations
-                    
-                    <br>✅ Order Tracking
-                    <br>✅ Return Policy
-                    <br>✅ Shopping Questions
+                    <p>
+                        Ask anything about products, orders or shopping.
+                    </p>
 
                 </div>
+
+            </div>
+
+            <div>
+
+                <a href="/shop" class="btn btn-light">
+
+                    <i class="fas fa-store"></i>
+
+                    Continue Shopping
+
+                </a>
+
             </div>
 
         </div>
 
+        <!-- =========================
+             CHAT BODY
+        ========================== -->
+
+        <div
+            id="chatBox"
+            class="chat-body"
+        >
+
+            <!-- Welcome -->
+
+            <div class="bot-message">
+
+                <div class="bubble">
+
+                    <div class="welcome-title">
+
+                        👋 Hello
+                        <strong>
+                            <%= user ? "User" : "Guest" %>
+                        </strong>
+
+                    </div>
+
+                    <p>
+                        I'm your AI shopping assistant.
+                    </p>
+
+                    <p>I can help you with:</p>
+
+                    <ul>
+
+                        <li>📷 CCTV Camera Recommendation</li>
+
+                        <li>💰 Products Under Your Budget</li>
+
+                        <li>📦 Order Status</li>
+
+                        <li>🔄 Return Policy</li>
+
+                        <li>🛒 Product Comparison</li>
+
+                        <li>📊 Product Analytics</li>
+
+                        <li>❓ Technical Questions</li>
+
+                    </ul>
+
+                    <div class="quick-question">
+
+                        Try asking:
+
+                    </div>
+
+                    <div class="quick-buttons">
+
+                        <button class="quick-btn">
+                            Best camera under ₹5000
+                        </button>
+
+                        <button class="quick-btn">
+                            Hikvision Camera
+                        </button>
+
+                        <button class="quick-btn">
+                            Compare Dahua and Hikvision
+                        </button>
+
+                        <button class="quick-btn">
+                            My Orders
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- =========================
+             TYPING
+        ========================== -->
+
+        <div
+            id="typing"
+            class="typing-box"
+            style="display:none;"
+        >
+
+            <div class="typing-avatar">
+
+                <i class="fas fa-robot"></i>
+
+            </div>
+
+            <div class="typing-bubble">
+
+                <span></span>
+
+                <span></span>
+
+                <span></span>
+
+            </div>
+
+        </div>
+
+        <!-- =========================
+             INPUT
+        ========================== -->
+
         <div class="chat-footer">
 
             <input
+
                 type="text"
+
                 id="message"
+
                 placeholder="Ask about products..."
+
+                autocomplete="off"
+
             >
 
             <button id="sendBtn">
+
                 <i class="fas fa-paper-plane"></i>
+
             </button>
 
         </div>
@@ -158,102 +182,18 @@
 
 </div>
 
-<script type="module">
+<script>
 
-    import { sendChatMessage } from "/chatbot/js/api/chatApi.js";
+window.chatConfig = {
 
-const chatBox = document.getElementById("chatBox");
-const input = document.getElementById("message");
-const sendBtn = document.getElementById("sendBtn");
-window.sessionId = window.sessionId || null;
+    sessionId: "<%= sessionId %>",
 
-/* -----------------------------
-   SECURITY: escape HTML
-------------------------------*/
-function escapeHtml(str) {
-    return str
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+    userId: "<%= userId %>",
 
-/* -----------------------------
-   MESSAGE RENDERER
-------------------------------*/
-function addMessage(message, type, isHTML = false) {
+  
 
-    const wrapper = document.createElement("div");
-    wrapper.classList.add("message", type);
-
-    const bubble = document.createElement("div");
-    bubble.classList.add("bubble");
-
-    if (type === "bot" && !isHTML) {
-        bubble.innerText = message;
-    } else {
-        bubble.innerHTML = isHTML ? message : escapeHtml(message);
-    }
-
-    wrapper.appendChild(bubble);
-    chatBox.appendChild(wrapper);
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    return wrapper;
-}
-
-/* -----------------------------
-   SEND MESSAGE
-------------------------------*/
-async function sendMessage() {
-
-    const message = input.value.trim();
-    if (message === "") return;
-
-    // user message
-    addMessage(message, "user");
-    input.value = "";
-
-    // typing indicator
-    const typingNode = addMessage("AI is typing...", "bot");
-    typingNode.querySelector(".bubble").classList.add("typing");
-
-    try {
-const result = await sendChatMessage({
-    message,
-    sessionId: window.sessionId || null
-});
-
-if (!result.success) {
-    throw new Error(result.error);
-}
-
-const data = result.data;
-        // remove typing
-        typingNode.remove();
-
-        // bot response
-        addMessage(data.answer, "bot");
-
-    } catch (err) {
-
-        typingNode.remove();
-        addMessage("Something went wrong.", "bot");
-
-    }
-}
-
-/* -----------------------------
-   EVENTS
-------------------------------*/
-sendBtn.addEventListener("click", sendMessage);
-
-input.addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-        sendMessage();
-    }
-});
+};
 
 </script>
+
+<script type="module" src="/chatbot/js/chat.js"></script>

@@ -1,34 +1,37 @@
-export async function sendChatMessage({ message, sessionId }) {
+export async function sendChatMessage(body) {
 
     try {
 
         const response = await fetch("/chat", {
+
             method: "POST",
+
             headers: {
+
                 "Content-Type": "application/json"
+
             },
-            body: JSON.stringify({
-                message,
-                sessionId
-            })
+
+            body: JSON.stringify(body)
+
         });
 
-        if (!response.ok) {
-            throw new Error("Network response failed");
-        }
+        return await response.json();
 
-        const data = await response.json();
-
-        return {
-            success: true,
-            data
-        };
-
-    } catch (error) {
-
-        return {
-            success: false,
-            error: error.message || "Something went wrong"
-        };
     }
+
+    catch (err) {
+
+        console.error(err);
+
+        return { 
+
+            success: false,
+
+            error: err.message
+
+        };
+
+    }
+
 }

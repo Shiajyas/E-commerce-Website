@@ -3,40 +3,81 @@ async function analyticsResponse(analytics, result) {
     switch (analytics.operation) {
 
         case "COUNT_PRODUCTS":
-            return `There are ${result} matching products.`;
+            return {
+                answer: `There are ${result} matching products.`,
+                products: []
+            };
 
         case "TOTAL_STOCK":
-            return `Total stock available is ${result} units.`;
+            return {
+                answer: `Total stock available is ${result} units.`,
+                products: []
+            };
 
         case "CHECK_AVAILABILITY":
 
-            if (result > 0) {
-                return `${result} units are currently available.`;
-            }
-
-            return "Currently out of stock.";
+            return {
+                answer: result > 0
+                    ? `${result} units are currently available.`
+                    : "Currently out of stock.",
+                products: []
+            };
 
         case "AVERAGE_PRICE":
-            return `Average selling price is ₹${Math.round(result)}.`;
+            return {
+                answer: `Average selling price is ₹${Math.round(result)}.`,
+                products: []
+            };
 
         case "MOST_EXPENSIVE":
 
-            if (!result)
-                return "No product found.";
+            if (!result) {
+                return {
+                    answer: "No product found.",
+                    products: []
+                };
+            }
 
-            return `${result.productName} is the most expensive product at ₹${result.salePrice}.`;
+            return {
+                answer: `${result.productName} is the most expensive product at ₹${result.salePrice}.`,
+                products: [formatProduct(result)]
+            };
 
         case "CHEAPEST":
 
-            if (!result)
-                return "No product found.";
+            if (!result) {
+                return {
+                    answer: "No product found.",
+                    products: []
+                };
+            }
 
-            return `${result.productName} is the cheapest product at ₹${result.salePrice}.`;
+            return {
+                answer: `${result.productName} is the cheapest product at ₹${result.salePrice}.`,
+                products: [formatProduct(result)]
+            };
 
         default:
-            return "No analytics available.";
-
+            return {
+                answer: "No analytics available.",
+                products: []
+            };
     }
+
+}
+
+function formatProduct(product) {
+
+    return {
+        _id: product._id,
+        productName: product.productName,
+        brand: product.brand,
+        category: product.category,
+        salePrice: product.salePrice,
+        regularPrice: product.regularPrice,
+        quantity: product.quantity,
+        image: product.productImage?.[0] || "/images/no-image.png"
+    };
 
 }
 

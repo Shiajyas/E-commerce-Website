@@ -1,40 +1,114 @@
+const graph = require("../ai/graph/chatGraph");
 
+const runChatGraph = async ({ question, sessionId, userId }) => {
 
-const graph = require("../ai/graph/chatGraph")
-
-// adjust path to where your compiled graph file is
-
-const runChatGraph = async ({ question, sessionId,userId }) => {
-
-
-    console.log("Running chat graph with message:", question, "and sessionId:", sessionId);
+    console.log("================================");
+    console.log("Running Chat Graph");
+    console.log({
+        question,
+        sessionId,
+        userId
+    });
+    console.log("================================");
 
     try {
 
         const initialState = {
-            question: question,
+            question,
             sessionId,
-            userId: userId, // Assuming userId is the same as sessionId for now
+            userId,
             intent: null,
-            memory: [],
-            context: {},
-            response: null
+            answer: ""
         };
 
-        const result = await graph.invoke(initialState);
+        const finalState = await graph.invoke(initialState);
+
+        console.log("========== FINAL GRAPH STATE ==========");
+        console.dir(finalState, { depth: null });
+
+        console.log("\nRecommendation Products:");
+        console.dir(
+            finalState.memory?.recommendation?.products,
+            { depth: null }
+        );
+
+        console.log("\nProduct Products:");
+        console.dir(
+            finalState.memory?.product?.products,
+            { depth: null }
+        );
+
+        // ======================================
+        // Select Correct Products
+        // ======================================
+
+        let products = [];
+
+        if (
+            finalState.memory?.recommendation?.products &&
+            finalState.memory.recommendation.products.length > 0
+        ) {
+
+            products = finalState.memory.recommendation.products;
+
+        }
+        else if (
+            finalState.memory?.product?.products &&
+            finalState.memory.product.products.length > 0
+        ) {
+
+            products = finalState.memory.product.products;
+
+        }
+
+        console.log("\nProducts Returned To Frontend:");
+        console.dir(products, { depth: null });
 
         return {
-            answer: result.response || result.answer || "No response generated",
-            raw: result
+
+            answer: finalState.answer || "",
+
+            products,
+
+            analytics:
+                finalState.memory?.analytics?.result || null,
+
+            orders:
+                finalState.memory?.order?.orders || [],
+
+            memory: finalState.memory,
+
+            intent: finalState.intent,
+
+            raw: finalState
+
         };
 
-    } catch (err) {
-        console.error("Graph Engine Error:", err);
-
-        return {
-            answer: "AI engine error occurred"
-        };
     }
+
+    catch (err) {
+
+        console.error("Graph Engine Error:");
+        console.error(err);
+
+        return {
+
+            answer: "AI engine error occurred",
+
+            products: [],
+
+            analytics: null,
+
+            orders: [],
+
+            memory: {},
+
+            intent: null
+
+        };
+
+    }
+
 };
 
 module.exports = {

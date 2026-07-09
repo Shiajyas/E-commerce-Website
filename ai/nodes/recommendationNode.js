@@ -1,5 +1,6 @@
-const { extractRecommendation } =
-    require("../recommendation/extractor/recommendationExtractor");
+const {
+    extractRecommendation
+} = require("../recommendation/extractor/recommendationExtractor");
 
 const recommendationRuleEngine =
     require("../recommendation/recommendationRuleEngine");
@@ -26,10 +27,6 @@ async function recommendationNode(state) {
     console.log("Inside Recommendation Node (DOMAIN MEMORY)");
     console.log("========================================");
 
-    // =====================================================
-    // Conversation Memory
-    // =====================================================
-
     const memory = state.memory || {};
 
     const previousFilters =
@@ -37,10 +34,6 @@ async function recommendationNode(state) {
 
     const previousProducts =
         memory.recommendation?.products || [];
-
-    // =====================================================
-    // Question
-    // =====================================================
 
     const question =
         state.rewrittenQuestion ||
@@ -50,9 +43,9 @@ async function recommendationNode(state) {
     const lowerQuestion =
         question.toLowerCase();
 
-    // =====================================================
-    // Extract Recommendation Requirements
-    // =====================================================
+    // ==========================================
+    // Extract Requirements
+    // ==========================================
 
     const requirements =
         await extractRecommendation(question);
@@ -60,19 +53,15 @@ async function recommendationNode(state) {
     console.log("Requirements:");
     console.log(requirements);
 
-    // =====================================================
+    // ==========================================
     // Build Filters
-    // =====================================================
+    // ==========================================
 
     const currentFilters =
         recommendationRuleEngine(requirements);
 
     console.log("Current Filters:");
     console.log(currentFilters);
-
-    // =====================================================
-    // Merge Filters
-    // =====================================================
 
     const mergedFilters =
         contextManager.mergeFilters(
@@ -83,9 +72,9 @@ async function recommendationNode(state) {
     console.log("Merged Filters:");
     console.log(mergedFilters);
 
-    // =====================================================
+    // ==========================================
     // Follow-up Detection
-    // =====================================================
+    // ==========================================
 
     const followUpSignals = [
         "cheaper",
@@ -107,9 +96,9 @@ async function recommendationNode(state) {
             lowerQuestion.includes(word)
         );
 
-    // =====================================================
-    // Use Previous Recommendation
-    // =====================================================
+    // ==========================================
+    // Follow-up Recommendation
+    // ==========================================
 
     if (isFollowUp) {
 
@@ -128,7 +117,9 @@ async function recommendationNode(state) {
 
         }
 
-        if (lowerQuestion.includes("better")) {
+        if (
+            lowerQuestion.includes("better")
+        ) {
 
             refinedProducts.sort(
                 (a, b) =>
@@ -138,7 +129,7 @@ async function recommendationNode(state) {
 
         }
 
-        const answer =
+        const result =
             await recommendationResponse(
                 question,
                 refinedProducts
@@ -150,7 +141,9 @@ async function recommendationNode(state) {
 
             intent: "PRODUCT_RECOMMENDATION",
 
-            answer,
+            answer: result.answer,
+
+            products: result.products,
 
             memory: {
 
@@ -162,7 +155,7 @@ async function recommendationNode(state) {
 
                     filters: mergedFilters,
 
-                    products: refinedProducts
+                    products: result.products
 
                 }
 
@@ -172,9 +165,9 @@ async function recommendationNode(state) {
 
     }
 
-    // =====================================================
+    // ==========================================
     // Database Query
-    // =====================================================
+    // ==========================================
 
     const query =
         recommendationQueryBuilder(
@@ -189,9 +182,9 @@ async function recommendationNode(state) {
 
     console.log("Products Found:", products.length);
 
-    // =====================================================
+    // ==========================================
     // Global Fallback
-    // =====================================================
+    // ==========================================
 
     if (!products.length) {
 
@@ -219,6 +212,8 @@ async function recommendationNode(state) {
             answer:
                 "Sorry, no suitable products are available right now.",
 
+            products: [],
+
             memory: {
 
                 ...memory,
@@ -239,9 +234,9 @@ async function recommendationNode(state) {
 
     }
 
-    // =====================================================
+    // ==========================================
     // Recommendation Scoring
-    // =====================================================
+    // ==========================================
 
     products =
         recommendationScoring(
@@ -270,19 +265,24 @@ async function recommendationNode(state) {
 
     );
 
-    // =====================================================
-    // Generate Response
-    // =====================================================
+    // ==========================================
+    // Generate AI Response
+    // ==========================================
 
-    const answer =
+    const result =
         await recommendationResponse(
             question,
-            products
+            products,
+            requirements
         );
 
-    // =====================================================
-    // Save Memory
-    // =====================================================
+    // ==========================================
+    // Save Memory & Return
+    // ==========================================
+
+    console.log("Recommendation Result:");
+    console.log(result.answer);
+    console.log("Products Returned:", result.products);
 
     return {
 
@@ -290,7 +290,9 @@ async function recommendationNode(state) {
 
         intent: "PRODUCT_RECOMMENDATION",
 
-        answer,
+        answer: result.answer,
+
+        products: result.products,
 
         memory: {
 
@@ -302,7 +304,7 @@ async function recommendationNode(state) {
 
                 filters: mergedFilters,
 
-                products
+                products: result.products
 
             }
 

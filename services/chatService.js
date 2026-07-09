@@ -2,19 +2,20 @@ const { runChatGraph } = require("./graphEngine");
 
 const handleChat = async ({ question, sessionId, userId }) => {
 
-    console.log(`handleChat called with question: ${question}, sessionId: ${sessionId}, userId: ${userId}`);
-
     const result = await runChatGraph({
-        question: question, 
+        question,
         sessionId,
         userId
     });
 
     return {
-        answer: result.answer
+        answer: result.answer,
+        products: result.products,
+        analytics: result.analytics,
+        orders: result.orders
     };
 };
 
 module.exports = {
     handleChat
-}
+};

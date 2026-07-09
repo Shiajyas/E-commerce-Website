@@ -1,9 +1,16 @@
 async function generateProductResponse(question, products) {
 
+    console.log("=================================");
     console.log(">>> PRODUCT RESPONSE");
+    console.log("=================================");
 
     if (!products || products.length === 0) {
-        return "Sorry, I couldn't find any matching products.";
+
+        return {
+            answer: "Sorry, I couldn't find any matching products.",
+            products: []
+        };
+
     }
 
     // Cheapest first
@@ -12,54 +19,65 @@ async function generateProductResponse(question, products) {
     const MAX_RESULTS = 10;
     const displayProducts = products.slice(0, MAX_RESULTS);
 
-    let response = "";
+    let answer = "";
 
-    response += `✅ Found ${products.length} matching product${products.length > 1 ? "s" : ""}.\n\n`;
+    answer += `✅ Found ${products.length} matching product${products.length > 1 ? "s" : ""}.\n\n`;
 
     if (products.length > MAX_RESULTS) {
-        response += `Showing the first ${MAX_RESULTS} results:\n\n`;
+        answer += `Showing the first ${MAX_RESULTS} results.\n\n`;
     }
 
     displayProducts.forEach((product, index) => {
 
         const price = Number(product.salePrice || 0).toLocaleString("en-IN");
-        const stock =
-            product.quantity > 0
-                ? `${product.quantity} available`
-                : "Out of Stock";
 
-        response += `${index + 1}. ${product.productName}\n`;
-
-        if (product.brand) {
-            response += `   • Brand    : ${product.brand}\n`;
-        }
-
-        if (product.category) {
-            response += `   • Category : ${product.category}\n`;
-        }
-
-        if (product.feature) {
-            response += `   • Feature  : ${product.feature}\n`;
-        }
-
-        response += `   • Price    : ₹${price}\n`;
-        response += `   • Stock    : ${stock}\n\n`;
+        answer += `${index + 1}. ${product.productName}\n`;
+        answer += `Brand : ${product.brand}\n`;
+        answer += `Price : ₹${price}\n`;
+        answer += `Category : ${product.category}\n`;
+        answer += `Stock : ${product.quantity > 0 ? `${product.quantity} available` : "Out of Stock"}\n\n`;
 
     });
 
-    if (products.length > MAX_RESULTS) {
+    const response = {
 
-        response += `...and ${products.length - MAX_RESULTS} more matching product`;
+        answer: answer.trim(),
 
-        if (products.length - MAX_RESULTS > 1) {
-            response += "s";
-        }
+        products: displayProducts.map(product => ({
 
-        response += ".";
+            _id: product._id,
 
-    }
+            productName: product.productName,
 
-    return response.trim();
+            brand: product.brand,
+
+            category: product.category,
+
+            feature: product.feature,
+
+            salePrice: product.salePrice,
+
+            regularPrice: product.regularPrice,
+
+            quantity: product.quantity,
+
+            image:
+                product.productImage?.[0] ||
+                product.image ||
+                "/images/no-image.png"
+
+        }))
+
+    };
+
+    console.log("\n========== PRODUCT RESPONSE ==========");
+    console.log(response.answer);
+
+    console.log("\n========== PRODUCTS ==========");
+    console.dir(response.products, { depth: null });
+
+    return response;
+
 }
 
 module.exports = generateProductResponse;
